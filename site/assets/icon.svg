@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="70" y1="40" x2="442" y2="472" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7C3AED"/>
+      <stop offset="0.55" stop-color="#E0337E"/>
+      <stop offset="1" stop-color="#FF9A1F"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="170" cy="110" r="320" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.34"/>
+      <stop offset="0.6" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="face" x1="150" y1="120" x2="360" y2="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#FFE6F0"/>
+    </linearGradient>
+    <linearGradient id="horn" x1="0" y1="120" x2="0" y2="230" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFD27A"/>
+      <stop offset="1" stop-color="#FFFFFF"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#3B0A45" flood-opacity="0.35"/>
+    </filter>
+    <mask id="cut">
+      <rect width="512" height="512" fill="#fff"/>
+      <!-- sly eyes -->
+      <ellipse cx="212" cy="298" rx="25" ry="15" transform="rotate(18 212 298)" fill="#000"/>
+      <ellipse cx="300" cy="298" rx="25" ry="15" transform="rotate(-18 300 298)" fill="#000"/>
+      <!-- grin -->
+      <path d="M220 346 Q256 376 292 346" fill="none" stroke="#000" stroke-width="14" stroke-linecap="round"/>
+    </mask>
+  </defs>
+
+  <circle cx="256" cy="256" r="240" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="240" fill="url(#glow)"/>
+  <circle cx="256" cy="256" r="238" fill="none" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="4"/>
+
+  <g filter="url(#shadow)">
+    <!-- curved horns -->
+    <path fill="url(#horn)" d="M170 236 C146 206 138 166 158 120 C166 158 190 188 222 204 Z"/>
+    <path fill="url(#horn)" d="M342 236 C366 206 374 166 354 120 C346 158 322 188 290 204 Z"/>
+    <!-- round head -->
+    <ellipse mask="url(#cut)" cx="256" cy="300" rx="134" ry="118" fill="url(#face)"/>
+  </g>
+</svg>

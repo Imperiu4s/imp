@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src * data: blob:; connect-src 'none'; object-src 'none'">
+  <title>Imp</title>
+  <link rel="stylesheet" href="ui.css">
+</head>
+<body>
+  <div id="app">
+    <header id="titlebar" class="drag">
+      <div class="mac-space"></div>
+      <div id="tabstrip" class="tabstrip">
+        <div id="tabs-h" class="tabs"></div>
+        <button id="new-tab-h" class="icon-btn new-tab no-drag" data-tip="tip.newTab"></button>
+      </div>
+      <div class="drag-fill"></div>
+      <div class="wco-space"></div>
+    </header>
+
+    <nav id="toolbar">
+      <div class="mac-space vertical-only"></div>
+      <button id="btn-sidebar" class="icon-btn vertical-only no-drag" data-tip="tip.sidebar"></button>
+      <button id="btn-back" class="icon-btn no-drag" data-tip="tip.back"></button>
+      <button id="btn-forward" class="icon-btn no-drag" data-tip="tip.forward"></button>
+      <button id="btn-reload" class="icon-btn no-drag" data-tip="tip.reload"></button>
+      <button id="btn-home" class="icon-btn no-drag" data-tip="tip.home" hidden></button>
+
+      <div id="omnibox" class="no-drag">
+        <button id="site-btn" class="site-btn" data-tip="tip.siteInfo"></button>
+        <input id="url" type="text" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off">
+        <button id="zoom-chip" class="chip" hidden></button>
+        <button id="btn-reader" class="icon-btn small" data-tip="tip.reader" hidden></button>
+        <button id="btn-star" class="icon-btn small" data-tip="tip.bookmark"></button>
+      </div>
+
+      <div class="actions no-drag">
+        <span id="private-pill" class="private-pill" hidden></span>
+        <button id="btn-shields" class="icon-btn shields-btn" data-tip="tip.shields"><span class="badge" hidden></span></button>
+        <button id="btn-split" class="icon-btn" data-tip="tip.split"></button>
+        <button id="btn-downloads" class="icon-btn downloads-btn" data-tip="tip.downloads" hidden><span class="ring"></span></button>
+        <button id="btn-menu" class="icon-btn menu-btn" data-tip="tip.menu"><span class="dot" hidden></span></button>
+      </div>
+      <div class="drag-fill vertical-only"></div>
+      <div class="wco-space vertical-only"></div>
+      <div id="loadbar"></div>
+    </nav>
+
+    <div id="bookmarks-bar"></div>
+
+    <div id="infobar" hidden>
+      <span class="info-icon"></span>
+      <span class="info-text"></span>
+      <div class="info-actions">
+        <button class="btn ghost" data-act="block"></button>
+        <button class="btn primary" data-act="allow"></button>
+      </div>
+    </div>
+
+    <div id="findbar" hidden>
+      <span class="find-icon"></span>
+      <input id="find-input" type="text" spellcheck="false">
+      <span id="find-count"></span>
+      <button id="find-prev" class="icon-btn small"></button>
+      <button id="find-next" class="icon-btn small"></button>
+      <button id="find-close" class="icon-btn small"></button>
+    </div>
+
+    <div id="main">
+      <aside id="sidebar">
+        <div class="sidebar-head">
+          <button id="new-tab-v" class="sidebar-new"><span class="ic-wrap"></span><span class="label"></span></button>
+        </div>
+        <div id="tabs-v" class="tabs vertical"></div>
+      </aside>
+      <div id="page-area">
+        <div id="split-ring-l" class="split-ring" hidden></div>
+        <div id="split-ring-r" class="split-ring" hidden></div>
+        <div id="split-divider" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../shared/i18n.js"></script>
+  <script src="../shared/icons.js"></script>
+  <script src="ui.js"></script>
+</body>
+</html>

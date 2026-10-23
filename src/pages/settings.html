@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Settings</title>
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body data-title-key="set.title">
+  <div class="layout">
+    <nav class="side">
+      <div class="brand"><img src="/assets/icon.svg" width="28" height="28" alt=""><span data-i18n="set.title"></span></div>
+      <div class="search side-search">
+        <span data-icon="search" data-size="15"></span>
+        <input id="filter" class="input" data-i18n-ph="set.search">
+      </div>
+      <div id="nav" class="nav"></div>
+    </nav>
+    <main id="content" class="content"></main>
+  </div>
+
+  <dialog id="clear-dialog">
+    <form method="dialog" id="clear-form">
+      <h2 data-i18n="set.clear.title"></h2>
+      <label><span data-i18n="set.clear.range"></span>
+        <select class="input" id="clear-range">
+          <option value="hour" data-i18n="set.clear.hour"></option>
+          <option value="day" data-i18n="set.clear.day"></option>
+          <option value="week" data-i18n="set.clear.week"></option>
+          <option value="month" data-i18n="set.clear.month"></option>
+          <option value="all" data-i18n="set.clear.all" selected></option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="clear-history" checked><span data-i18n="set.clear.history"></span></label>
+      <label class="check"><input type="checkbox" id="clear-cookies"><span data-i18n="set.clear.cookies"></span></label>
+      <label class="check"><input type="checkbox" id="clear-cache" checked><span data-i18n="set.clear.cache"></span></label>
+      <label class="check"><input type="checkbox" id="clear-downloads"><span data-i18n="set.clear.downloads"></span></label>
+      <div class="buttons">
+        <button type="button" class="btn" id="clear-cancel" data-i18n="common.cancel"></button>
+        <button type="submit" class="btn primary" data-i18n="set.clear.button"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/shared/i18n.js"></script>
+  <script src="/shared/icons.js"></script>
+  <script src="/shared/engines.js"></script>
+  <script src="common.js"></script>
+  <script src="settings.js"></script>
+</body>
+</html>

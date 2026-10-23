@@ -1,0 +1,163 @@
+{
+  "name": "imp-browser",
+  "productName": "Imp",
+  "version": "1.0.0",
+  "description": "Imp – a fast, private, lightweight web browser with built-in ad and tracker blocking.",
+  "main": "src/main/main.js",
+  "author": {
+    "name": "Imp contributors"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/Imperiu4s/imp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Imperiu4s/imp.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "icons": "node scripts/make-icons.mjs",
+    "check": "node scripts/check.mjs",
+    "dist": "electron-builder --publish never",
+    "dist:win": "electron-builder --win --x64 --publish never",
+    "dist:mac": "electron-builder --mac --publish never",
+    "dist:linux": "electron-builder --linux --publish never",
+    "release": "electron-builder --publish always"
+  },
+  "dependencies": {
+    "@ghostery/adblocker-electron": "^2.20.1",
+    "@mozilla/readability": "^0.6.0",
+    "electron-updater": "^6.8.9",
+    "tldts": "^7.4.19"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "electron": "^44.9.3",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "io.github.imp.browser",
+    "productName": "Imp",
+    "copyright": "Copyright © 2026 Imp contributors",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "!**/*.map",
+      "!**/*.d.ts",
+      "!**/*.md",
+      "!**/test/**",
+      "!**/tests/**"
+    ],
+    "asar": true,
+    "compression": "maximum",
+    "electronLanguages": [
+      "en-US",
+      "hu"
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "releaseType": "release"
+      }
+    ],
+    "protocols": [
+      {
+        "name": "Web page",
+        "schemes": [
+          "http",
+          "https"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "Imp-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Imp",
+      "uninstallDisplayName": "Imp",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/uninstallerSidebar.bmp",
+      "license": "LICENSE",
+      "include": "build/installer.nsh",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "multiLanguageInstaller": true,
+      "installerLanguages": [
+        "en_US",
+        "hu_HU"
+      ]
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.productivity",
+      "artifactName": "Imp-${version}-${arch}.${ext}",
+      "extendInfo": {
+        "CFBundleDocumentTypes": [
+          {
+            "CFBundleTypeName": "HTML document",
+            "CFBundleTypeRole": "Viewer",
+            "LSItemContentTypes": [
+              "public.html"
+            ]
+          }
+        ]
+      }
+    },
+    "linux": {
+      "maintainer": "Imperius <203720338+Imperiu4s@users.noreply.github.com>",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "build/icons",
+      "category": "Network",
+      "synopsis": "Fast, private, lightweight web browser",
+      "artifactName": "Imp-${version}-${arch}.${ext}",
+      "mimeTypes": [
+        "text/html",
+        "application/xhtml+xml",
+        "x-scheme-handler/http",
+        "x-scheme-handler/https"
+      ],
+      "desktop": {
+        "entry": {
+          "Categories": "Network;WebBrowser;",
+          "StartupWMClass": "Imp"
+        }
+      }
+    },
+    "deb": {
+      "packageName": "imp-browser"
+    }
+  }
+}

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reader</title>
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="reader.css">
+</head>
+<body class="r-theme-auto r-sans" data-title-key="reader.title">
+  <header class="r-bar">
+    <a id="orig" class="btn small" data-icon="external" data-size="14"><span data-i18n="reader.original"></span></a>
+    <div class="spacer"></div>
+    <div class="segmented" id="fonts">
+      <button data-font="sans">Aa</button>
+      <button data-font="serif" style="font-family: Georgia, serif">Aa</button>
+    </div>
+    <div class="segmented">
+      <button id="smaller" data-icon="minus" data-size="15"></button>
+      <button id="bigger" data-icon="plus" data-size="15"></button>
+    </div>
+    <div class="segmented" id="themes">
+      <button data-rtheme="auto" data-i18n="reader.auto"></button>
+      <button data-rtheme="light" data-i18n="reader.light"></button>
+      <button data-rtheme="sepia" data-i18n="reader.sepia"></button>
+      <button data-rtheme="dark" data-i18n="reader.dark"></button>
+    </div>
+  </header>
+  <article id="article" class="r-article">
+    <div class="r-site" id="site"></div>
+    <h1 id="title"></h1>
+    <div class="r-meta" id="meta"></div>
+    <div id="body" class="r-body"></div>
+  </article>
+  <script src="/shared/i18n.js"></script>
+  <script src="/shared/icons.js"></script>
+  <script src="common.js"></script>
+  <script src="reader.js"></script>
+</body>
+</html>

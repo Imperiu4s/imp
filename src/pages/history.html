@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>History</title>
+  <link rel="stylesheet" href="common.css">
+</head>
+<body data-title-key="hist.title">
+  <div class="page">
+    <div class="page-head">
+      <h1><span data-icon="history" data-size="26"></span><span data-i18n="hist.title"></span></h1>
+      <a class="btn" href="imp://settings/#privacy" data-icon="trash" data-size="15"><span data-i18n="hist.clear"></span></a>
+    </div>
+    <div class="search" style="margin-bottom:8px">
+      <span data-icon="search" data-size="16"></span>
+      <input id="q" class="input" data-i18n-ph="hist.search" autofocus>
+    </div>
+    <div id="list"></div>
+    <div id="more" class="empty" hidden><button class="btn" id="more-btn" data-i18n="hist.more"></button></div>
+  </div>
+  <script src="/shared/i18n.js"></script>
+  <script src="/shared/icons.js"></script>
+  <script src="common.js"></script>
+  <script src="history.js"></script>
+</body>
+</html>

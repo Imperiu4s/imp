@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Downloads</title>
+  <link rel="stylesheet" href="common.css">
+  <style>
+    .file-ic { width: 40px; height: 40px; border-radius: 11px; background: var(--surface-2); color: var(--accent); display: grid; place-items: center; font-size: 10px; font-weight: 700; text-transform: uppercase; flex: none; }
+    .progress { height: 5px; border-radius: 3px; background: var(--press); margin-top: 7px; overflow: hidden; max-width: 420px; }
+    .progress i { display: block; height: 100%; background: var(--accent); border-radius: 3px; transition: width .25s; }
+    .gone .title { text-decoration: line-through; opacity: .6; }
+    .list-row .actions { opacity: 1; }
+    .state-failed .sub, .state-cancelled .sub { color: var(--danger); }
+  </style>
+</head>
+<body data-title-key="dlp.title">
+  <div class="page">
+    <div class="page-head">
+      <h1><span data-icon="download" data-size="26"></span><span data-i18n="dlp.title"></span></h1>
+      <button class="btn small" id="open-folder" data-icon="folder" data-size="15"><span data-i18n="dlp.openFolder"></span></button>
+      <button class="btn small" id="clear" data-icon="trash" data-size="15"><span data-i18n="dlp.clear"></span></button>
+    </div>
+    <div class="search" style="margin-bottom:16px">
+      <span data-icon="search" data-size="16"></span>
+      <input id="q" class="input" data-i18n-ph="dlp.search">
+    </div>
+    <div class="card list" id="list"></div>
+  </div>
+  <script src="/shared/i18n.js"></script>
+  <script src="/shared/icons.js"></script>
+  <script src="common.js"></script>
+  <script src="downloads.js"></script>
+</body>
+</html>

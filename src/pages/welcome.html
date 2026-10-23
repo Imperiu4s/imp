@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Welcome to Imp</title>
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="welcome.css">
+</head>
+<body data-title-key="wel.docTitle">
+  <div class="glow"></div>
+  <main class="wizard">
+    <div class="dots" id="dots"></div>
+
+    <section class="step" data-step="0">
+      <img class="hero-logo" src="/assets/icon.svg" width="112" height="112" alt="">
+      <h1 data-i18n="wel.title"></h1>
+      <p class="lead" data-i18n="wel.lead"></p>
+      <div class="features">
+        <div><span data-icon="shieldCheck" data-size="20"></span><b data-i18n="wel.f1"></b><span data-i18n="wel.f1d"></span></div>
+        <div><span data-icon="zap" data-size="20"></span><b data-i18n="wel.f2"></b><span data-i18n="wel.f2d"></span></div>
+        <div><span data-icon="split" data-size="20"></span><b data-i18n="wel.f3"></b><span data-i18n="wel.f3d"></span></div>
+      </div>
+      <button class="btn primary big next" data-i18n="wel.start"></button>
+    </section>
+
+    <section class="step" data-step="1" hidden>
+      <h2 data-i18n="wel.lookTitle"></h2>
+      <p class="lead" data-i18n="wel.lookLead"></p>
+      <div class="choices three" id="themes"></div>
+      <div class="swatches" id="accents"></div>
+      <div class="choices two" id="layouts"></div>
+    </section>
+
+    <section class="step" data-step="2" hidden>
+      <h2 data-i18n="wel.searchTitle"></h2>
+      <p class="lead" data-i18n="wel.searchLead"></p>
+      <div class="choices engines" id="engines"></div>
+    </section>
+
+    <section class="step" data-step="3" hidden>
+      <h2 data-i18n="wel.shieldsTitle"></h2>
+      <p class="lead" data-i18n="wel.shieldsLead"></p>
+      <div class="choices three" id="shields"></div>
+    </section>
+
+    <section class="step" data-step="4" hidden>
+      <h2 data-i18n="wel.importTitle"></h2>
+      <p class="lead" data-i18n="wel.importLead"></p>
+      <div class="choices import" id="imports"></div>
+      <p class="muted small" id="import-result"></p>
+    </section>
+
+    <section class="step" data-step="5" hidden>
+      <img class="hero-logo small" src="/assets/icon.svg" width="72" height="72" alt="">
+      <h2 data-i18n="wel.doneTitle"></h2>
+      <p class="lead" data-i18n="wel.doneLead"></p>
+      <div class="done-actions">
+        <button class="btn big" id="make-default" data-icon="check" data-size="16"><span data-i18n="wel.makeDefault"></span></button>
+        <button class="btn primary big" id="finish" data-i18n="wel.finish"></button>
+      </div>
+    </section>
+
+    <nav class="nav-row" id="nav-row" hidden>
+      <button class="btn" id="back" data-i18n="wel.back"></button>
+      <button class="btn primary" id="next" data-i18n="wel.next"></button>
+    </nav>
+  </main>
+  <script src="/shared/i18n.js"></script>
+  <script src="/shared/icons.js"></script>
+  <script src="/shared/engines.js"></script>
+  <script src="common.js"></script>
+  <script src="welcome.js"></script>
+</body>
+</html>

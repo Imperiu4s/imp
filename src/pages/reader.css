@@ -1,0 +1,162 @@
+body {
+  --r-size: 19px;
+  --r-bg: var(--bg);
+  --r-text: var(--text);
+  background: var(--r-bg);
+  color: var(--r-text);
+}
+
+body.r-theme-light {
+  --r-bg: #ffffff;
+  --r-text: #1d1f26;
+  --text-2: #5d6476;
+  --surface: #ffffff;
+  --surface-2: #f0f2f7;
+  --border: rgba(20, 25, 50, 0.1);
+  color-scheme: light;
+}
+
+body.r-theme-sepia {
+  --r-bg: #f6efe0;
+  --r-text: #3b2f22;
+  --text-2: #7a6650;
+  --surface: #fbf6ea;
+  --surface-2: #ece2cc;
+  --border: rgba(80, 60, 30, 0.15);
+  color-scheme: light;
+}
+
+body.r-theme-dark {
+  --r-bg: #15171c;
+  --r-text: #dfe2e9;
+  --text-2: #9aa1b2;
+  --surface: #1f222a;
+  --surface-2: #2a2e38;
+  --border: rgba(255, 255, 255, 0.08);
+  color-scheme: dark;
+}
+
+.r-bar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  background: color-mix(in srgb, var(--r-bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.r-bar .spacer {
+  flex: 1;
+}
+
+.r-bar .segmented button {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12.5px;
+}
+
+.r-article {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 48px 24px 120px;
+}
+
+body.r-serif .r-article {
+  font-family: "Iowan Old Style", Charter, Georgia, "Times New Roman", serif;
+}
+
+.r-site {
+  color: var(--accent);
+  font-weight: 650;
+  font-size: 14px;
+  margin-bottom: 10px;
+  font-family: var(--font);
+}
+
+.r-article h1 {
+  font-size: calc(var(--r-size) * 1.85);
+  line-height: 1.18;
+  margin: 0 0 14px;
+}
+
+.r-meta {
+  color: var(--text-2);
+  font-size: 14px;
+  font-family: var(--font);
+  padding-bottom: 26px;
+  margin-bottom: 30px;
+  border-bottom: 1px solid var(--border);
+}
+
+.r-body {
+  font-size: var(--r-size);
+  line-height: 1.72;
+  overflow-wrap: break-word;
+}
+
+.r-body img,
+.r-body video,
+.r-body figure {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+}
+
+.r-body figure {
+  margin: 1.4em 0;
+}
+
+.r-body figcaption {
+  font-size: 0.8em;
+  color: var(--text-2);
+  margin-top: 6px;
+}
+
+.r-body a {
+  color: var(--accent);
+}
+
+.r-body pre,
+.r-body code {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.86em;
+  background: var(--surface-2);
+  border-radius: 6px;
+}
+
+.r-body code {
+  padding: 1px 5px;
+}
+
+.r-body pre {
+  padding: 14px 16px;
+  overflow: auto;
+}
+
+.r-body blockquote {
+  margin: 1.2em 0;
+  padding: 0.2em 1.1em;
+  border-left: 3px solid var(--accent);
+  color: var(--text-2);
+}
+
+.r-body table {
+  border-collapse: collapse;
+  max-width: 100%;
+  display: block;
+  overflow: auto;
+}
+
+.r-body td,
+.r-body th {
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+}
+
+.segmented button.on {
+  color: var(--r-text);
+}

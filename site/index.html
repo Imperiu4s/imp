@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Imp — gyors, privát, könnyű böngésző</title>
+  <meta name="description" content="Imp: ingyenes, nyílt forráskódú böngésző beépített reklám- és követőblokkolással, alvó lapokkal, osztott nézettel és függőleges lapokkal.">
+  <meta name="theme-color" content="#0b0f1f">
+  <meta property="og:title" content="Imp — Fast. Private. Light.">
+  <meta property="og:description" content="A free, open-source browser with built-in ad & tracker blocking, sleeping tabs, split view and vertical tabs.">
+  <meta property="og:image" content="assets/icon-512.png">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="aurora" aria-hidden="true"></div>
+
+  <header class="nav">
+    <a class="brand" href="#top"><img src="assets/icon.svg" width="30" height="30" alt=""><span>Imp</span></a>
+    <nav class="links">
+      <a href="#features" data-i18n="nav.features">Funkciók</a>
+      <a href="#best" data-i18n="nav.best">A legjobbakból</a>
+      <a href="#speed" data-i18n="nav.speed">Sebesség</a>
+      <a href="#faq" data-i18n="nav.faq">GYIK</a>
+      <a class="gh-link" href="#" data-i18n="nav.github">GitHub</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="lang" id="lang" type="button" aria-label="Language">EN</button>
+      <a class="btn small primary" href="#download" data-i18n="nav.download">Letöltés</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-text">
+        <span class="pill"><span class="dot"></span><span data-i18n="hero.pill">Ingyenes és nyílt forráskódú</span></span>
+        <h1 data-i18n-html="hero.title">A böngésző, ami <span class="grad">gyors marad.</span></h1>
+        <p class="lead" data-i18n="hero.lead">Az Imp már betöltés előtt letiltja a reklámokat és a követőket, elaltatja a nem használt lapokat, és bármilyen gépen könnyű marad. A legjobb ötleteket gyűjtöttük össze az összes böngészőből — egy helyen.</p>
+        <div class="cta">
+          <a class="btn big primary dl-main" id="dl-main" href="#download">
+            <span class="os-icon" id="os-icon"></span>
+            <span><b id="dl-main-label" data-i18n="hero.download">Letöltés Windowsra</b><small id="dl-main-sub">Windows 10 / 11 · 64 bit</small></span>
+          </a>
+          <a class="btn big ghost" href="#download" data-i18n="hero.other">Más rendszerek</a>
+        </div>
+        <p class="meta"><span id="version-line" data-i18n="hero.meta">Chromium-motor · Windows, macOS, Linux</span></p>
+      </div>
+
+      <div class="hero-shot">
+        <div class="window">
+          <div class="win-bar">
+            <div class="win-tab active"><img src="assets/icon.svg" width="14" height="14" alt=""><span data-i18n="mock.newTab">Új lap</span></div>
+            <div class="win-tab"><span class="fav f1"></span><span>Wikipedia</span></div>
+            <div class="win-tab"><span class="fav f2"></span><span>YouTube</span></div>
+            <span class="win-plus">+</span>
+            <span class="win-ctrl"><i></i><i></i><i></i></span>
+          </div>
+          <div class="win-toolbar">
+            <span class="tb-ic"></span><span class="tb-ic"></span><span class="tb-ic"></span>
+            <div class="win-url"><span class="lock"></span><span data-i18n="mock.search">Keress, vagy írj be egy webcímet</span></div>
+            <span class="shield"><b>34</b></span><span class="tb-ic"></span>
+          </div>
+          <div class="win-body">
+            <div class="mock-time">09:41</div>
+            <div class="mock-search"><img src="assets/icon.svg" width="20" height="20" alt=""><span data-i18n="mock.engine">Keresés vagy webcím</span><i></i></div>
+            <div class="mock-tiles"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="mock-stats">
+              <div><b>12 408</b><span data-i18n="mock.blocked">letiltott hirdetés és követő</span></div>
+              <div><b data-i18n="mock.savedVal">10 perc</b><span data-i18n="mock.saved">megspórolt idő</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="float-card shields-card">
+          <div class="fc-ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 2.8v5.9c0 4.6-3.2 8.3-7.5 9.3-4.3-1-7.5-4.7-7.5-9.3V5.8z"/><path d="M8.8 12.2l2.3 2.3 4.3-4.6"/></svg></div>
+          <div><b data-i18n="mock.shieldsUp">Shields: BE</b><span data-i18n="mock.shieldsSub">34 elem letiltva ezen az oldalon</span></div>
+        </div>
+        <div class="float-card sleep-card">
+          <div class="fc-ic violet"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 14.6A7.8 7.8 0 0 1 9.4 4.5a7.8 7.8 0 1 0 10.1 10.1z"/></svg></div>
+          <div><b data-i18n="mock.sleeping">5 lap alszik</b><span data-i18n="mock.sleepingSub">memória felszabadítva</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="strip">
+      <div><b data-i18n="strip.1">Beépített Shields</b><span data-i18n="strip.1d">reklám- és követőblokkoló</span></div>
+      <div><b data-i18n="strip.2">Alvó lapok</b><span data-i18n="strip.2d">kevesebb RAM és CPU</span></div>
+      <div><b data-i18n="strip.3">Lusta visszaállítás</b><span data-i18n="strip.3d">gyors indulás sok lappal is</span></div>
+      <div><b data-i18n="strip.4">Magyar és angol</b><span data-i18n="strip.4d">teljes felület</span></div>
+    </section>
+
+    <section class="section" id="features">
+      <h2 class="section-title" data-i18n="feat.title">Minden, ami egy modern böngészőhöz kell</h2>
+      <p class="section-lead" data-i18n="feat.lead">És semmi, ami lassítaná.</p>
+      <div class="grid features">
+        <article class="card"><div class="ic c1" data-icon="shield"></div><h3 data-i18n="f.shields">Imp Shields</h3><p data-i18n="f.shieldsD">Reklámok, követők, kriptobányászok és — szigorú módban — a sütifigyelmeztetések letiltása, oldalanként kapcsolható.</p></article>
+        <article class="card"><div class="ic c2" data-icon="moon"></div><h3 data-i18n="f.sleep">Alvó lapok</h3><p data-i18n="f.sleepD">A régóta nem használt lapok elalszanak és felszabadítják a memóriát; görgetési pozícióval és előzményekkel együtt ébrednek.</p></article>
+        <article class="card"><div class="ic c3" data-icon="split"></div><h3 data-i18n="f.split">Osztott nézet</h3><p data-i18n="f.splitD">Két lap egymás mellett, egy ablakban, húzható elválasztóval.</p></article>
+        <article class="card"><div class="ic c4" data-icon="sidebar"></div><h3 data-i18n="f.vertical">Függőleges lapok</h3><p data-i18n="f.verticalD">Oldalsávba rendezett lapok, összecsukható nézettel — sok laphoz ideális.</p></article>
+        <article class="card"><div class="ic c5" data-icon="command"></div><h3 data-i18n="f.palette">Gyorsparancsok</h3><p data-i18n="f.paletteD">Ctrl+Shift+A: keress a lapok, könyvjelzők, előzmények és az összes parancs között.</p></article>
+        <article class="card"><div class="ic c6" data-icon="book"></div><h3 data-i18n="f.reader">Olvasó mód</h3><p data-i18n="f.readerD">Tiszta, reklámmentes cikkek állítható betűmérettel, szépia és sötét témával.</p></article>
+        <article class="card"><div class="ic c1" data-icon="lock"></div><h3 data-i18n="f.https">HTTPS-re váltás és biztonságos DNS</h3><p data-i18n="f.httpsD">Automatikus titkosított kapcsolat, DNS-over-HTTPS, Global Privacy Control és harmadik féltől származó sütik tiltása.</p></article>
+        <article class="card"><div class="ic c2" data-icon="camera"></div><h3 data-i18n="f.capture">Képernyőkép és fordítás</h3><p data-i18n="f.captureD">Látható terület vagy teljes oldal mentése egy kattintással, és oldalfordítás a helyi menüből.</p></article>
+        <article class="card"><div class="ic c3" data-icon="zap"></div><h3 data-i18n="f.task">Feladatkezelő</h3><p data-i18n="f.taskD">Lásd, melyik lap mennyi memóriát és CPU-t használ — és altasd vagy zárd be egy kattintással.</p></article>
+        <article class="card"><div class="ic c4" data-icon="incognito"></div><h3 data-i18n="f.private">Privát ablakok</h3><p data-i18n="f.privateD">Minden privát ablak külön, memóriában tartott munkamenetet kap; bezáráskor minden törlődik.</p></article>
+        <article class="card"><div class="ic c5" data-icon="download"></div><h3 data-i18n="f.import">Egyszerű átállás</h3><p data-i18n="f.importD">Könyvjelzők importálása Chrome-ból, Edge-ből, Brave-ből, Vivaldiból, Operából vagy HTML-fájlból.</p></article>
+        <article class="card"><div class="ic c6" data-icon="refresh"></div><h3 data-i18n="f.update">Automatikus frissítés</h3><p data-i18n="f.updateD">Az Imp a háttérben frissül a GitHubról, és egy újraindítással kész.</p></article>
+      </div>
+    </section>
+
+    <section class="section" id="best">
+      <h2 class="section-title" data-i18n="best.title">A legjobb ötletek, minden böngészőből</h2>
+      <p class="section-lead" data-i18n="best.lead">Nem találtuk fel újra a kereket — összeraktuk azt, amit a többiek a legjobban csinálnak.</p>
+      <div class="grid best">
+        <div class="best-card"><span class="from">Brave</span><b data-i18n="b.brave">Beépített Shields és statisztika az új lapon</b></div>
+        <div class="best-card"><span class="from">Microsoft Edge</span><b data-i18n="b.edge">Alvó lapok, takarékos mód, osztott nézet</b></div>
+        <div class="best-card"><span class="from">Vivaldi</span><b data-i18n="b.vivaldi">Gyorsparancsok és függőleges lapok</b></div>
+        <div class="best-card"><span class="from">Firefox</span><b data-i18n="b.firefox">Olvasó mód és HTTPS-only mód</b></div>
+        <div class="best-card"><span class="from">Opera</span><b data-i18n="b.opera">Beépített képernyőkép</b></div>
+        <div class="best-card"><span class="from">Chrome</span><b data-i18n="b.chrome">Okos címsor, feladatkezelő, lapkezelés</b></div>
+        <div class="best-card"><span class="from">Arc</span><b data-i18n="b.arc">Parancssáv-szemléletű gyors navigáció</b></div>
+        <div class="best-card"><span class="from">Safari</span><b data-i18n="b.safari">Letisztult, tartalomközpontú felület</b></div>
+      </div>
+    </section>
+
+    <section class="section speed" id="speed">
+      <div class="speed-text">
+        <h2 class="section-title left" data-i18n="speed.title">Gyors gyenge gépen is</h2>
+        <p data-i18n="speed.lead">A sebesség nem egyetlen trükk, hanem sok apró döntés eredménye:</p>
+        <ul class="checks">
+          <li data-i18n-html="speed.1"><b>Kevesebb letöltés:</b> a reklámok és követők le sem töltődnek, így az oldalak hamarabb kész vannak.</li>
+          <li data-i18n-html="speed.2"><b>Kevesebb memória:</b> a háttérlapok elalszanak, akkumulátoron még hamarabb.</li>
+          <li data-i18n-html="speed.3"><b>Gyors indulás:</b> visszaállításkor csak az aktív lap töltődik be, a többi csak megnyitáskor.</li>
+          <li data-i18n-html="speed.4"><b>Előzetes kapcsolódás:</b> amíg a javaslatot választod, az Imp már kapcsolódik az oldalhoz.</li>
+          <li data-i18n-html="speed.5"><b>Könnyű felület:</b> keretrendszer nélküli, natív HTML/CSS kezelőfelület.</li>
+          <li data-i18n-html="speed.6"><b>Régi gépekre is:</b> a hardveres gyorsítás kikapcsolható, a feladatkezelő megmutatja, mi lassít.</li>
+        </ul>
+      </div>
+      <div class="speed-visual" aria-hidden="true">
+        <div class="meter">
+          <div class="meter-row"><span data-i18n="meter.requests">Hálózati kérések egy hírportálon</span></div>
+          <div class="bar"><i class="b-off" style="width:100%"></i></div>
+          <div class="bar"><i class="b-on" style="width:58%"></i></div>
+          <div class="legend"><span><i class="b-off"></i><span data-i18n="meter.without">Blokkolás nélkül</span></span><span><i class="b-on"></i><span data-i18n="meter.with">Imp Shields</span></span></div>
+          <p class="fine" data-i18n="meter.note">Szemléltető ábra — a pontos megtakarítás oldalanként eltér; az Imp Shields statisztikája megmutatja a saját számaidat.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="download">
+      <h2 class="section-title" data-i18n="dl.title">Töltsd le az Impet</h2>
+      <p class="section-lead" id="dl-version" data-i18n="dl.lead">Ingyenes. Fiók és regisztráció nélkül.</p>
+      <div class="grid downloads">
+        <div class="dl-card" data-os="windows">
+          <div class="dl-ic" data-icon="windows"></div>
+          <h3>Windows</h3>
+          <p data-i18n="dl.win">Windows 10 és 11, 64 bit</p>
+          <a class="btn primary" id="dl-win" href="#" data-i18n="dl.winBtn">Telepítő letöltése (.exe)</a>
+        </div>
+        <div class="dl-card" data-os="mac">
+          <div class="dl-ic" data-icon="apple"></div>
+          <h3>macOS</h3>
+          <p data-i18n="dl.mac">macOS 12 vagy újabb</p>
+          <a class="btn primary" id="dl-mac-arm" href="#" data-i18n="dl.macArm">Apple Silicon (.dmg)</a>
+          <a class="btn ghost" id="dl-mac-x64" href="#" data-i18n="dl.macIntel">Intel (.dmg)</a>
+        </div>
+        <div class="dl-card" data-os="linux">
+          <div class="dl-ic" data-icon="linux"></div>
+          <h3>Linux</h3>
+          <p data-i18n="dl.linux">Ubuntu, Debian, Fedora és mások</p>
+          <a class="btn primary" id="dl-appimage" href="#" data-i18n="dl.appimage">AppImage</a>
+          <a class="btn ghost" id="dl-deb" href="#" data-i18n="dl.deb">.deb csomag</a>
+        </div>
+      </div>
+      <p class="fine center" id="dl-note" data-i18n-html="dl.note">Minden kiadás és a forráskód megtalálható a <a class="gh-releases" href="#">GitHub Releases</a> oldalon.</p>
+    </section>
+
+    <section class="section narrow" id="faq">
+      <h2 class="section-title" data-i18n="faq.title">Gyakori kérdések</h2>
+      <details><summary data-i18n="q1">Tényleg ingyenes?</summary><p data-i18n="a1">Igen. Az Imp nyílt forráskódú (MIT licenc), nincs benne reklám, és nem gyűjt rólad adatot.</p></details>
+      <details><summary data-i18n="q2">Milyen motorra épül?</summary><p data-i18n="a2">A Chromium motorra (Electron-on keresztül) — ugyanarra, amelyre a Chrome, az Edge és a Brave is. Így a weboldalak ugyanúgy működnek, mint ezekben.</p></details>
+      <details><summary data-i18n="q3">Miért ír ki figyelmeztetést a Windows telepítéskor?</summary><p data-i18n="a3">A telepítő még nincs digitálisan aláírva (ez fizetős tanúsítvány). Kattints a „További információ”, majd a „Futtatás mindenképp” gombra. A forráskód és az automatikus build nyilvános a GitHubon.</p></details>
+      <details><summary data-i18n="q4">Működnek a Chrome-bővítmények?</summary><p data-i18n="a4">Még nem — a beépített Shields kiváltja a legnépszerűbb bővítményt, a reklámblokkolót. A bővítménytámogatás a tervek között szerepel.</p></details>
+      <details><summary data-i18n="q5">Hogyan frissül?</summary><p data-i18n="a5">Automatikusan: az Imp a háttérben letölti az új verziót a GitHubról, és a következő újraindításkor telepíti.</p></details>
+      <details><summary data-i18n="q6">Hol tárolja az adataimat?</summary><p data-i18n="a6">Csak a saját gépeden, a profilmappádban. Nincs fiók, nincs felhős szinkronizálás, nincs telemetria.</p></details>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="brand"><img src="assets/icon.svg" width="24" height="24" alt=""><span>Imp</span></div>
+    <p data-i18n="footer.tag">Gyors. Privát. Könnyű.</p>
+    <p class="fine"><a class="gh-link" href="#">GitHub</a> · <span data-i18n="footer.license">MIT licenc</span> · <span data-i18n="footer.trademarks">Az említett böngészőnevek tulajdonosaik védjegyei; az Imp nem áll kapcsolatban velük.</span></p>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

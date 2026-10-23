@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Task manager</title>
+  <link rel="stylesheet" href="common.css">
+  <style>
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 26px; }
+    .metric { padding: 16px 18px; }
+    .metric .k { font-size: 12.5px; color: var(--text-2); display: flex; align-items: center; gap: 8px; }
+    .metric .k .ic { color: var(--accent); }
+    .metric .v { font-size: 26px; font-weight: 700; margin-top: 6px; font-variant-numeric: tabular-nums; font-family: var(--display); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 10px 14px; border-top: 1px solid var(--border); font-size: 13px; }
+    th { border-top: 0; font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); font-weight: 650; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    td.name { max-width: 0; width: 55%; }
+    td.name .title { display: flex; align-items: center; gap: 10px; }
+    td.name .title span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    tr:hover td { background: var(--hover); }
+    .pill { font-size: 11px; padding: 2px 8px; border-radius: 6px; background: var(--surface-2); color: var(--text-2); white-space: nowrap; }
+    .pill.active { color: var(--ok); }
+    .pill.sleep { color: var(--accent); }
+    td.act { white-space: nowrap; text-align: right; width: 1%; }
+    .bar { height: 4px; border-radius: 2px; background: var(--accent); opacity: .7; margin-top: 4px; }
+  </style>
+</head>
+<body data-title-key="perf.title">
+  <div class="page">
+    <div class="page-head">
+      <h1><span data-icon="zap" data-size="26"></span><span data-i18n="perf.title"></span></h1>
+      <button class="btn primary" id="sleep-all" data-icon="moon" data-size="15"><span data-i18n="perf.sleepAll"></span></button>
+    </div>
+    <p class="muted" data-i18n="perf.intro" style="margin-top:-8px"></p>
+    <div class="cards">
+      <div class="card metric"><div class="k" data-icon="cpu" data-size="15"><span data-i18n="perf.memory"></span></div><div class="v" id="m-mem">–</div></div>
+      <div class="card metric"><div class="k" data-icon="window" data-size="15"><span data-i18n="perf.tabs"></span></div><div class="v" id="m-tabs">–</div></div>
+      <div class="card metric"><div class="k" data-icon="moon" data-size="15"><span data-i18n="perf.sleeping"></span></div><div class="v" id="m-sleep">–</div></div>
+      <div class="card metric"><div class="k" data-icon="leaf" data-size="15"><span data-i18n="perf.efficiency"></span></div><div class="v" id="m-eff">–</div></div>
+    </div>
+    <div class="group-title" data-i18n="perf.tabsTitle"></div>
+    <div class="card"><table id="tabs"></table></div>
+    <div class="group-title" data-i18n="perf.procTitle"></div>
+    <div class="card"><table id="procs"></table></div>
+  </div>
+  <script src="/shared/i18n.js"></script>
+  <script src="/shared/icons.js"></script>
+  <script src="common.js"></script>
+  <script src="performance.js"></script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>New Tab</title>
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="newtab.css">
+</head>
+<body data-title-key="newTab">
+  <div id="bg" class="bg"></div>
+
+  <button id="customize" class="corner-btn" data-icon="settings" data-size="18" data-i18n-title="ntp.customize"></button>
+
+  <main class="ntp">
+    <div id="clock" class="clock">
+      <div id="time" class="time"></div>
+      <div id="date" class="date"></div>
+    </div>
+
+    <form id="search" class="ntp-search">
+      <span class="logo"><img src="/assets/icon.svg" width="26" height="26" alt=""></span>
+      <input id="q" type="text" autocomplete="off" spellcheck="false">
+      <button type="submit" class="go" data-icon="search" data-size="18" aria-label="search"></button>
+    </form>
+
+    <section id="private-info" class="private-info" hidden>
+      <div class="pi-icon" data-icon="incognito" data-size="26"></div>
+      <h2 data-i18n="ntp.privateTitle"></h2>
+      <p data-i18n="ntp.privateBody"></p>
+    </section>
+
+    <section id="shortcuts" class="tiles"></section>
+
+    <section id="stats" class="stats">
+      <div class="stat">
+        <div class="stat-ic" data-icon="shieldCheck" data-size="20"></div>
+        <div><b id="st-blocked">0</b><span data-i18n="ntp.blocked"></span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-ic" data-icon="zap" data-size="20"></div>
+        <div><b id="st-time">0s</b><span data-i18n="ntp.timeSaved"></span></div>
+      </div>
+      <div class="stat">
+        <div class="stat-ic" data-icon="lock" data-size="20"></div>
+        <div><b id="st-https">0</b><span data-i18n="ntp.upgraded"></span></div>
+      </div>
+    </section>
+  </main>
+
+  <aside id="panel" class="panel" hidden>
+    <div class="panel-head">
+      <h2 data-i18n="ntp.customize"></h2>
+      <button id="panel-close" class="icon-btn" data-icon="close"></button>
+    </div>
+    <div class="panel-body">
+      <div class="opt"><span data-i18n="ntp.showClock"></span><button class="switch" data-key="newtab.showClock"></button></div>
+      <div class="opt"><span data-i18n="ntp.showShortcuts"></span><button class="switch" data-key="newtab.showShortcuts"></button></div>
+      <div class="opt"><span data-i18n="ntp.showStats"></span><button class="switch" data-key="newtab.showStats"></button></div>
+      <h3 data-i18n="ntp.background"></h3>
+      <div id="bg-grid" class="bg-grid"></div>
+      <button id="bg-upload" class="btn small" data-icon="upload" data-i18n="ntp.uploadBg"></button>
+    </div>
+  </aside>
+
+  <dialog id="add-dialog">
+    <form method="dialog" id="add-form">
+      <h2 data-i18n="ntp.addShortcut"></h2>
+      <label><span data-i18n="ntp.scName"></span><input class="input" id="add-title" required></label>
+      <label><span data-i18n="ntp.scUrl"></span><input class="input" id="add-url" required placeholder="https://"></label>
+      <div class="buttons">
+        <button type="button" class="btn" id="add-cancel" data-i18n="common.cancel"></button>
+        <button type="submit" class="btn primary" data-i18n="common.save"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/shared/i18n.js"></script>
+  <script src="/shared/icons.js"></script>
+  <script src="/shared/engines.js"></script>
+  <script src="common.js"></script>
+  <script src="newtab.js"></script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bookmarks</title>
+  <link rel="stylesheet" href="common.css">
+  <style>
+    .bm-layout { display: grid; grid-template-columns: 230px 1fr; gap: 20px; align-items: start; }
+    .folders { padding: 8px; position: sticky; top: 20px; }
+    .folder { display: flex; align-items: center; gap: 10px; width: 100%; height: 36px; padding: 0 10px; border: 0; border-radius: 9px; background: transparent; text-align: left; color: var(--text-2); font-weight: 550; }
+    .folder:hover { background: var(--hover); color: var(--text); }
+    .folder.on { background: var(--accent-soft); color: var(--accent); }
+    .folder.sub { padding-left: 28px; }
+    .folder span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .toolbar-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+    .toolbar-row .search { flex: 1; min-width: 200px; }
+    .list-row[draggable="true"] { cursor: grab; }
+    .list-row.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
+    @media (max-width: 720px) { .bm-layout { grid-template-columns: 1fr; } .folders { position: static; } }
+  </style>
+</head>
+<body data-title-key="bmk.title">
+  <div class="page">
+    <div class="page-head">
+      <h1><span data-icon="bookmark" data-size="26"></span><span data-i18n="bmk.title"></span></h1>
+      <button class="btn small" id="import" data-icon="file" data-size="14"><span data-i18n="bmk.import"></span></button>
+      <button class="btn small" id="export" data-icon="upload" data-size="14"><span data-i18n="bmk.export"></span></button>
+    </div>
+    <div class="bm-layout">
+      <nav class="card folders" id="folders"></nav>
+      <div>
+        <div class="toolbar-row">
+          <div class="search"><span data-icon="search" data-size="16"></span><input id="q" class="input" data-i18n-ph="bmk.search"></div>
+          <button class="btn" id="add-bm" data-icon="plus" data-size="15"><span data-i18n="bmk.add"></span></button>
+          <button class="btn" id="add-folder" data-icon="folder" data-size="15"><span data-i18n="bmk.addFolder"></span></button>
+        </div>
+        <div class="card list" id="items"></div>
+      </div>
+    </div>
+  </div>
+
+  <dialog id="edit">
+    <form method="dialog" id="edit-form">
+      <h2 id="edit-title"></h2>
+      <label><span data-i18n="bm.name"></span><input class="input" id="f-title" required></label>
+      <label id="url-label"><span data-i18n="bmk.url"></span><input class="input" id="f-url" spellcheck="false"></label>
+      <label><span data-i18n="bm.folder"></span><select class="input" id="f-parent"></select></label>
+      <div class="buttons">
+        <button type="button" class="btn" id="edit-cancel" data-i18n="common.cancel"></button>
+        <button type="submit" class="btn primary" data-i18n="common.save"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/shared/i18n.js"></script>
+  <script src="/shared/icons.js"></script>
+  <script src="common.js"></script>
+  <script src="bookmarks.js"></script>
+</body>
+</html>
