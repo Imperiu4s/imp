@@ -230,7 +230,7 @@
       return;
     }
     const sample = [...tabEls.values()].find((el) => !el.classList.contains('pinned'));
-    const narrow = sample ? sample.getBoundingClientRect().width < 96 : false;
+    const narrow = sample ? sample.getBoundingClientRect().width < 112 : false;
     for (const el of tabEls.values()) el.classList.toggle('narrow', narrow);
   }
 
@@ -473,9 +473,11 @@
   }
 
   // ------------------------------------------------------------------ address bar
-  const suggest = { open: false, items: [], selected: 0, text: '', seq: 0, local: null, remote: [], completedUrl: null };
+  // zero: the list shows your recent searches (opened by clicking the empty bar)
+  const suggest = { open: false, zero: false, items: [], selected: 0, text: '', seq: 0, local: null, remote: [], completedUrl: null };
   let lastInputType = '';
   let selectOnUp = false;
+  let warmedUp = false;
   const preconnected = new Set();
 
   function preconnect(url) {
@@ -488,7 +490,7 @@
   }
 
   urlInput.addEventListener('mousedown', () => {
-    if (document.activeElement !== urlInput) selectOnUp = true;
+    if (document.activeElement !== urlInput || !document.hasFocus()) selectOnUp = true;
   });
   urlInput.addEventListener('mouseup', (e) => {
     if (selectOnUp) {
@@ -496,12 +498,19 @@
       urlInput.select();
       selectOnUp = false;
     }
+    // Clicking the address bar always brings up your recent searches.
+    if (!userTyped && !suggest.open) showRecent();
   });
   urlInput.addEventListener('focus', () => {
     omnibox.classList.add('focused');
     if (!userTyped) {
       urlInput.value = fullUrl(activeTab());
       urlInput.select();
+    }
+    // Open a connection to the search engine now, so the search starts instantly.
+    if (!warmedUp) {
+      warmedUp = true;
+      api.send('omnibox:warmup');
     }
   });
   urlInput.addEventListener('blur', () => {
@@ -522,12 +531,27 @@
     onOmniboxInput();
   });
 
+  async function showRecent() {
+    const seq = ++suggest.seq;
+    const list = await api.invoke('omnibox:recent');
+    if (seq !== suggest.seq || userTyped || document.activeElement !== urlInput || !Array.isArray(list)) return;
+    if (!list.length) return closeSuggest();
+    suggest.zero = true;
+    suggest.text = '';
+    suggest.completedUrl = null;
+    suggest.items = list.map((q) => ({ kind: 'recent', icon: 'history', title: q, query: q, sub: '', removable: true }));
+    suggest.selected = -1;
+    showSuggest();
+  }
+
   async function onOmniboxInput() {
     const text = urlInput.value;
     suggest.text = text;
+    suggest.zero = false;
     const seq = ++suggest.seq;
     if (!text.trim()) {
       closeSuggest();
+      showRecent();
       return;
     }
     const res = await api.invoke('omnibox:suggest', text);
@@ -575,6 +599,7 @@
       if (res.resolved.isSearch) push({ kind: 'search', icon: 'search', title: text, query: text, sub: t('omnibox.searchWith', { engine: res.engine }) });
       else push({ kind: 'url', icon: 'globe', title: text, url: res.resolved.url, sub: t('omnibox.open') });
     }
+    for (const q of res.recent || []) push({ kind: 'recent', icon: 'history', title: q, query: q, sub: t('omnibox.searchedBefore'), removable: true });
     for (const it of res.items) {
       push({ kind: it.type, icon: it.type === 'bookmark' ? 'star' : 'history', title: it.title || it.url, url: it.url, sub: shortUrl(it.url), favicon: it.favicon });
     }
@@ -586,9 +611,18 @@
     showSuggest();
   }
 
+  function suggestData() {
+    return {
+      items: suggest.items,
+      selected: suggest.selected,
+      width: omnibox.getBoundingClientRect().width,
+      title: suggest.zero ? t('omnibox.recent') : '',
+    };
+  }
+
   function showSuggest() {
     if (!suggest.items.length) return closeSuggest();
-    const data = { items: suggest.items, selected: suggest.selected, width: omnibox.getBoundingClientRect().width };
+    const data = suggestData();
     if (!suggest.open) {
       suggest.open = true;
       popupOpen = 'suggest';
@@ -608,34 +642,50 @@
   function moveSelection(delta) {
     if (!suggest.open || !suggest.items.length) return;
     const n = suggest.items.length;
-    suggest.selected = (suggest.selected + delta + n) % n;
+    if (suggest.selected < 0) suggest.selected = delta > 0 ? 0 : n - 1;
+    else suggest.selected = (suggest.selected + delta + n) % n;
     const item = suggest.items[suggest.selected];
     urlInput.value = item.url && item.kind !== 'url' ? item.url : item.query || item.title;
-    if (suggest.selected === 0) urlInput.value = suggest.completedUrl ? urlInput.value : suggest.text;
+    if (suggest.selected === 0 && !suggest.zero) urlInput.value = suggest.completedUrl ? urlInput.value : suggest.text;
     if (item.url) preconnect(item.url);
-    api.send('popup:update', 'suggest', { items: suggest.items, selected: suggest.selected, width: omnibox.getBoundingClientRect().width });
+    api.send('popup:update', 'suggest', suggestData());
   }
 
+  const SEARCH_KINDS = new Set(['search', 'suggestion', 'recent']);
   function go(item, disposition = 'current') {
-    if (item.kind === 'search' || item.kind === 'suggestion') api.send('nav:go', `?${item.query || item.title}`, { disposition });
+    if (SEARCH_KINDS.has(item.kind)) api.send('nav:go', `?${item.query || item.title}`, { disposition });
     else if (item.url) api.send('nav:url', item.url, { disposition, typed: true });
+  }
+
+  // The × next to a remembered search in the list.
+  async function removeSuggestion({ index }) {
+    const item = suggest.items[index];
+    if (!item || !item.removable) return;
+    await api.invoke('omnibox:forget', item.query);
+    urlInput.focus();
+    if (suggest.zero) return showRecent();
+    suggest.items.splice(index, 1);
+    if (suggest.selected >= suggest.items.length) suggest.selected = suggest.items.length - 1;
+    showSuggest();
   }
 
   function finishOmnibox() {
     closeSuggest();
     userTyped = false;
+    suggest.zero = false;
     suggest.items = [];
     suggest.remote = [];
   }
 
   function commit(e) {
-    let text = urlInput.value.trim();
+    const text = urlInput.value.trim();
     if (!text) return;
     const disposition = e.altKey ? 'new-tab' : 'current';
+    const picked = suggest.open ? suggest.items[suggest.selected] : null;
     if (e.ctrlKey && /^[\p{L}\p{N}-]+$/u.test(text)) {
       api.send('nav:go', `www.${text}.com`, { disposition });
-    } else if (suggest.open && suggest.items[suggest.selected] && suggest.selected > 0) {
-      go(suggest.items[suggest.selected], disposition);
+    } else if (picked && (suggest.zero || suggest.selected > 0)) {
+      go(picked, disposition);
     } else if (suggest.completedUrl && urlInput.value.toLowerCase().startsWith(suggest.text.toLowerCase())) {
       api.send('nav:url', suggest.completedUrl, { disposition, typed: true });
     } else {
@@ -657,7 +707,8 @@
       e.preventDefault();
       if (suggest.open) {
         closeSuggest();
-        urlInput.value = suggest.text;
+        urlInput.value = suggest.zero ? fullUrl(activeTab()) : suggest.text;
+        if (suggest.zero) urlInput.select();
       } else {
         userTyped = false;
         urlInput.value = fullUrl(activeTab());
@@ -978,9 +1029,10 @@
     htmlFullscreen = on;
     setFullscreen();
   });
-  api.on('ui:focus-omnibox', () => {
+  api.on('ui:focus-omnibox', (opts) => {
     urlInput.focus();
     urlInput.select();
+    if (opts?.recent && !userTyped) showRecent();
   });
   api.on('ui:find', () => openFind());
   api.on('ui:find-step', ({ forward }) => findStep(forward));
@@ -1006,6 +1058,7 @@
     updatePopupButtons();
   });
   api.on('omnibox:pick', (p) => pickSuggestion(p));
+  api.on('omnibox:remove', (p) => removeSuggestion(p));
   api.on('ui:attention', (tabId) => {
     attention.add(tabId);
     render();

@@ -4,14 +4,17 @@
 // (Electron only allows one listener per webRequest event).
 const fs = require('node:fs');
 const { ipcMain, webContents } = require('electron');
-const { ElectronBlocker, Request } = require('@ghostery/adblocker-electron');
 const { parse: parseHost, getDomain } = require('tldts');
 const settings = require('./settings');
 const compat = require('./compat');
+const trace = require('./trace');
 const { JsonFile, dataPath } = require('./store');
 
 const PRELOAD_PATH = require.resolve('@ghostery/adblocker-electron-preload');
 const DAY = 24 * 60 * 60 * 1000;
+
+let ghostery = null;
+const lib = () => (ghostery ||= require('@ghostery/adblocker-electron'));
 const LOCAL_SUFFIXES = ['.local', '.lan', '.internal', '.test', '.localhost', '.home.arpa', '.intranet', '.corp'];
 
 const stats = new JsonFile('stats.json', { blocked: 0, upgraded: 0, since: Date.now() });
@@ -51,32 +54,47 @@ function setSiteEnabled(host, enabled) {
 
 // ---- filter engine ---------------------------------------------------------
 
+let engineMode = null;
+let engineAge = Infinity;
+
+// Loads the ad-block library and the cached filter engine synchronously. Runs
+// before the first window is created, so no page request goes unfiltered.
+function preloadEngine() {
+  const mode = settings.get('shields.adblock');
+  if (mode === 'off') return;
+  const file = dataPath(`shields-${mode}.bin`);
+  try {
+    const buf = fs.readFileSync(file);
+    engineAge = Date.now() - fs.statSync(file).mtimeMs;
+    engine = lib().ElectronBlocker.deserialize(new Uint8Array(buf));
+    engineMode = mode;
+    trace.mark('ad-block engine loaded from cache');
+  } catch {
+    engineAge = Infinity;
+  }
+}
+
 async function loadEngine() {
   const mode = settings.get('shields.adblock');
   clearTimeout(retryTimer);
   if (mode === 'off') {
     engine = null;
+    engineMode = null;
     return;
   }
-  const file = dataPath(`shields-${mode}.bin`);
-  let age = Infinity;
-  try {
-    const buf = fs.readFileSync(file);
-    age = Date.now() - fs.statSync(file).mtimeMs;
-    engine = ElectronBlocker.deserialize(new Uint8Array(buf));
-  } catch {
-    age = Infinity;
-  }
-  if (age < 3 * DAY) return;
+  if (engineMode !== mode) preloadEngine();
+  if (engine && engineMode === mode && engineAge < 3 * DAY) return;
   try {
     const fetchImpl = (url) => netSession.fetch(url, { cache: 'no-store' });
     const fresh =
       mode === 'aggressive'
-        ? await ElectronBlocker.fromPrebuiltFull(fetchImpl)
-        : await ElectronBlocker.fromPrebuiltAdsAndTracking(fetchImpl);
+        ? await lib().ElectronBlocker.fromPrebuiltFull(fetchImpl)
+        : await lib().ElectronBlocker.fromPrebuiltAdsAndTracking(fetchImpl);
     if (settings.get('shields.adblock') !== mode) return;
     engine = fresh;
-    fs.writeFileSync(file, Buffer.from(fresh.serialize()));
+    engineMode = mode;
+    engineAge = 0;
+    fs.writeFileSync(dataPath(`shields-${mode}.bin`), Buffer.from(fresh.serialize()));
   } catch (err) {
     console.warn('[shields] filter list update failed:', err.message);
     if (!engine) retryTimer = setTimeout(reloadEngine, 60_000);
@@ -150,7 +168,7 @@ function onBeforeRequest(details, callback) {
   try {
     if (details.frame && details.frame.url) sourceUrl = details.frame.url;
   } catch {}
-  const request = Request.fromRawDetails({
+  const request = lib().Request.fromRawDetails({
     requestId: String(details.id),
     tabId: details.webContentsId,
     type: resourceType || 'other',
@@ -194,7 +212,7 @@ function onHeadersReceived(details, callback) {
 
   if (engine && isFrame && !allowlisted) {
     const csp = engine.getCSPDirectives(
-      Request.fromRawDetails({ url: details.url, type: details.resourceType, sourceUrl: topUrl }),
+      lib().Request.fromRawDetails({ url: details.url, type: details.resourceType, sourceUrl: topUrl }),
     );
     if (csp) {
       const policies = csp.split(';').map((s) => s.trim());

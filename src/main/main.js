@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { app, protocol, session, nativeTheme, Menu } = require('electron');
+const trace = require('./trace');
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'imp', privileges: { standard: true, secure: true, supportFetchAPI: true, codeCache: true } },
@@ -12,6 +13,13 @@ app.setAppUserModelId('io.github.imp.browser');
 
 // Separate profile folder, e.g. for testing or portable use: IMP_PROFILE=D:\ImpProfile
 if (process.env.IMP_PROFILE) app.setPath('userData', path.resolve(process.env.IMP_PROFILE));
+
+// Keep V8's compiled code for Imp's own modules (and the ad-block engine) on
+// disk, so later startups skip parsing and compiling them again.
+try {
+  require('node:module').enableCompileCache?.(path.join(app.getPath('userData'), 'Code Cache', 'main'));
+} catch {}
+trace.mark('main.js started');
 
 const settings = require('./settings');
 settings.load();
@@ -64,6 +72,7 @@ function start() {
   const manager = require('./windows');
   const { flushAll } = require('./store');
   const { lang } = require('./i18n');
+  trace.mark('main modules loaded');
 
   const pendingUrls = [];
   let ready = false;
@@ -124,6 +133,7 @@ function start() {
   }
 
   app.whenReady().then(() => {
+    trace.mark('app ready');
     Menu.setApplicationMenu(process.platform === 'darwin' ? macMenu() : null);
     nativeTheme.themeSource = settings.get('appearance.theme');
 
@@ -137,6 +147,7 @@ function start() {
     manager.init(browsing);
     manager.setupSession(browsing, false);
     shields.init(net, (wcId, url) => manager.findTabByWcId(wcId)?.noteBlocked(url));
+    trace.mark('sessions + shields set up');
     configureDns();
     internal.init(manager, updater);
     ipc.init(manager, net);
@@ -166,12 +177,18 @@ function start() {
       manager.createWindow({ url: urls.shift() });
       urls.forEach((u) => manager.openUrl(u));
     }
-    // Since 1.0.1 third-party cookies are allowed by default (they broke sign-ins);
-    // move existing 1.0.0 installs to the new default once.
-    if (settings.get('meta.lastVersion') === '1.0.0' && app.getVersion() !== '1.0.0') {
-      settings.set('shields.thirdPartyCookies', false);
+    // One-time moves to newer defaults, only where the old default was never changed.
+    const previous = settings.get('meta.lastVersion');
+    if (previous && previous !== app.getVersion()) {
+      // 1.0.1: third-party cookie blocking broke sign-ins, so it is off by default.
+      if (previous === '1.0.0') settings.set('shields.thirdPartyCookies', false);
+      // 1.0.2: tabs go to sleep after 10 minutes instead of 15.
+      if (['1.0.0', '1.0.1'].includes(previous) && settings.get('performance.sleepAfter') === 15) {
+        settings.set('performance.sleepAfter', 10);
+      }
     }
     settings.set('meta.lastVersion', app.getVersion());
+    trace.mark('first window created');
     ready = true;
     updater.init(manager);
   });

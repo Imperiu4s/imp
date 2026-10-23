@@ -209,6 +209,7 @@
             'set.sleepAfter',
             [
               [5, '!5 min'],
+              [10, '!10 min'],
               [15, '!15 min'],
               [30, '!30 min'],
               [60, '!1 h'],
@@ -288,8 +289,7 @@
             <div class="versions">${esc(t('set.about.version'))} ${esc(info.version)} · Chromium ${esc(info.chrome)} · Electron ${esc(info.electron)} · ${esc(info.platform)}-${esc(info.arch)}</div></div></div>
           <div class="item">${`<div class="text"><div class="label">${esc(t('set.update'))}</div><div class="desc">${esc(upText)}</div></div>`}
             ${up?.state === 'ready' ? `<button class="btn primary" id="install-update">${esc(t('set.update.install'))}</button>` : `<button class="btn" id="check-update" ${info.packaged ? '' : 'disabled'}>${esc(t('set.update.check'))}</button>`}</div>
-          <div class="item"><div class="text"><div class="label">${esc(t('set.about.credits'))}</div><div class="desc">${esc(t('set.about.creditsText'))}</div></div>
-            ${info.homepage ? `<a class="btn small" href="${esc(info.homepage)}">${icon('code', 14)}GitHub</a>` : ''}</div>
+          <div class="item"><div class="text"><div class="label">${esc(t('set.about.credits'))}</div><div class="desc">${esc(t('set.about.creditsText'))}</div></div></div>
         </div>`,
       );
     },

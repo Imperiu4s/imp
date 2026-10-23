@@ -11,6 +11,7 @@ const shortcuts = require('./shortcuts');
 const menus = require('./menus');
 const reader = require('./reader');
 const { t, lang } = require('./i18n');
+const trace = require('./trace');
 
 const UI_PRELOAD = path.join(__dirname, '../preload/ui.js');
 const UI_HTML = path.join(__dirname, '../ui/index.html');
@@ -118,11 +119,17 @@ class BrowserWin {
   wireWindow(opts) {
     const win = this.win;
     const wc = this.webContents;
-    win.once('ready-to-show', () => {
+    // Show the window as soon as the browser UI has its state (a frame later),
+    // instead of waiting for Chromium's 'ready-to-show', which fires ~200 ms later.
+    this.reveal = () => {
+      if (this.revealed || win.isDestroyed()) return;
+      this.revealed = true;
+      trace.mark('window shown');
       if (opts.maximized) win.maximize();
       if (opts.inactive) win.showInactive();
       else win.show();
-    });
+    };
+    win.once('ready-to-show', this.reveal);
     win.on('focus', () => {
       this.manager.lastFocused = this;
       this.send('win:focus', true);
@@ -202,9 +209,11 @@ class BrowserWin {
   }
 
   onUiReady() {
+    trace.mark('browser UI ready');
     this.uiReady = true;
     this.send('state:init', this.initialState());
     this.sendTabs();
+    setTimeout(this.reveal, 20);
   }
 
   tabChanged(tab) {
@@ -339,12 +348,19 @@ class BrowserWin {
     this.manager.saveSoon();
   }
 
+  focusOmnibox(opts = { select: true }) {
+    this.webContents.focus();
+    this.send('ui:focus-omnibox', opts);
+  }
+
   focusActive() {
     const tab = this.activeTab();
     if (!tab) return;
     if (tab.url === Tab.NEW_TAB && !this.split) {
-      this.webContents.focus();
-      this.send('ui:focus-omnibox', { select: true });
+      // The new tab page grabs focus when it finishes loading; keep the address
+      // bar focused for a moment so you can type right away (see Tab 'focus').
+      tab.omniboxFocusUntil = Date.now() + 2500;
+      this.focusOmnibox();
     } else {
       tab.wc?.focus();
     }
@@ -906,8 +922,7 @@ class BrowserWin {
         return target && this.activate(target.id);
       }
       case 'focus-omnibox':
-        this.webContents.focus();
-        return this.send('ui:focus-omnibox', { select: true });
+        return this.focusOmnibox({ select: true, recent: true });
       case 'focus-page':
         return tab?.wc?.focus();
       case 'reload':

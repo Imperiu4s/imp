@@ -166,7 +166,6 @@ const API = {
     isDefault: app.isDefaultProtocolClient('https'),
     packaged: app.isPackaged,
     update: manager.updateState,
-    homepage: /\/OWNER\//.test(require('../../package.json').homepage) ? null : require('../../package.json').homepage,
   }),
   'app.setDefault': async () => {
     app.setAsDefaultProtocolClient('http');
@@ -199,6 +198,8 @@ const API = {
   'bookmarks.update': (id, patch) => bookmarks.update(Number(id), patch || {}),
   'bookmarks.remove': (id) => bookmarks.remove(Number(id)),
   'bookmarks.move': (id, parent, beforeId) => bookmarks.move(Number(id), parent, beforeId),
+  'bookmarks.removeChildren': (parent) => bookmarks.removeChildren(parent),
+  'bookmarks.moveChildren': (from, to) => bookmarks.moveChildren(from, to),
   'bookmarks.importSources': () => bookmarks.availableImports(),
   'bookmarks.importBrowser': (name) => bookmarks.importFromBrowser(String(name)),
   'bookmarks.importHtml': async (ctx) => {

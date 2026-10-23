@@ -31,6 +31,12 @@ function open() {
     );
     CREATE INDEX IF NOT EXISTS visits_time ON visits(time);
     CREATE INDEX IF NOT EXISTS visits_url ON visits(url_id);
+    CREATE TABLE IF NOT EXISTS searches (
+      query TEXT PRIMARY KEY,
+      count INTEGER NOT NULL DEFAULT 1,
+      last INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS searches_last ON searches(last);
   `);
   q = {
     getUrl: db.prepare('SELECT id, last_visit FROM urls WHERE url = ?'),
@@ -54,13 +60,28 @@ function open() {
     deleteBefore: db.prepare('DELETE FROM visits WHERE time < ?'),
     orphanUrls: db.prepare('DELETE FROM urls WHERE id NOT IN (SELECT DISTINCT url_id FROM visits)'),
     count: db.prepare('SELECT COUNT(*) AS n FROM visits'),
+    getSearch: db.prepare('SELECT last FROM searches WHERE query = ?'),
+    upsertSearch: db.prepare(`INSERT INTO searches (query, count, last) VALUES (?, 1, ?)
+      ON CONFLICT(query) DO UPDATE SET count = count + 1, last = excluded.last`),
+    touchSearch: db.prepare('UPDATE searches SET last = ? WHERE query = ?'),
+    recentSearches: db.prepare('SELECT query FROM searches ORDER BY last DESC LIMIT ?'),
+    matchSearches: db.prepare(`SELECT query FROM searches WHERE query LIKE ? ESCAPE '\\' AND query <> ?
+      ORDER BY count DESC, last DESC LIMIT ?`),
+    deleteSearch: db.prepare('DELETE FROM searches WHERE query = ?'),
+    deleteSearchesSince: db.prepare('DELETE FROM searches WHERE last >= ?'),
+    deleteSearchesBefore: db.prepare('DELETE FROM searches WHERE last < ?'),
   };
-  try {
-    q.deleteBefore.run(Date.now() - RETENTION_DAYS * DAY);
-    q.orphanUrls.run();
-  } catch (err) {
-    console.error('[history] prune failed', err);
-  }
+  // Old entries are pruned shortly after startup, not during it.
+  setTimeout(() => {
+    if (!db) return;
+    try {
+      q.deleteBefore.run(Date.now() - RETENTION_DAYS * DAY);
+      q.deleteSearchesBefore.run(Date.now() - RETENTION_DAYS * DAY);
+      q.orphanUrls.run();
+    } catch (err) {
+      console.error('[history] prune failed', err);
+    }
+  }, 20_000).unref?.();
 }
 
 function isRecordable(url) {
@@ -167,11 +188,38 @@ function clear(range = 'all') {
   if (!db) return;
   const spans = { hour: 3600e3, day: DAY, week: 7 * DAY, month: 30 * DAY };
   if (range === 'all' || !spans[range]) {
-    db.exec('DELETE FROM visits; DELETE FROM urls;');
+    db.exec('DELETE FROM visits; DELETE FROM urls; DELETE FROM searches;');
   } else {
     q.deleteSince.run(Date.now() - spans[range]);
+    q.deleteSearchesSince.run(Date.now() - spans[range]);
     q.orphanUrls.run();
   }
+}
+
+// ---- searches typed into the address bar / search engine -------------------------
+
+function addSearch(query) {
+  const text = String(query || '').trim().slice(0, 300);
+  if (!db || !text) return;
+  const now = Date.now();
+  const row = q.getSearch.get(text);
+  // Paging through the same results is not a new search.
+  if (row && now - row.last < 60_000) q.touchSearch.run(now, text);
+  else q.upsertSearch.run(text, now);
+}
+
+function recentSearches(limit = 8) {
+  return db ? q.recentSearches.all(limit).map((r) => r.query) : [];
+}
+
+function matchSearches(prefix, limit = 3) {
+  const text = String(prefix || '').trim();
+  if (!db || !text) return [];
+  return q.matchSearches.all(`${esc(text)}%`, text, limit).map((r) => r.query);
+}
+
+function deleteSearch(query) {
+  if (db) q.deleteSearch.run(String(query));
 }
 
 function close() {
@@ -181,4 +229,21 @@ function close() {
   db = null;
 }
 
-module.exports = { open, close, addVisit, setTitle, setFavicon, search, autocomplete, list, topSites, deleteVisit, deleteUrl, clear };
+module.exports = {
+  open,
+  close,
+  addVisit,
+  setTitle,
+  setFavicon,
+  search,
+  autocomplete,
+  list,
+  topSites,
+  deleteVisit,
+  deleteUrl,
+  clear,
+  addSearch,
+  recentSearches,
+  matchSearches,
+  deleteSearch,
+};

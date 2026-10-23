@@ -62,7 +62,40 @@ class Bookmarks extends EventEmitter {
   }
 
   remove(id) {
-    const doomed = new Set([id]);
+    this.removeMany([id]);
+  }
+
+  // Deletes everything inside a folder ("bar", "other" or a folder id) in one go.
+  removeChildren(parent) {
+    const ids = this.items.filter((i) => String(i.parent) === String(parent)).map((i) => i.id);
+    if (ids.length) this.removeMany(ids);
+    return ids.length;
+  }
+
+  // Moves everything inside `from` to the end of `to`, keeping its order.
+  moveChildren(from, to) {
+    if (String(from) === String(to) || this.isInside(to, from)) return 0;
+    const moving = this.items.filter((i) => String(i.parent) === String(from));
+    if (!moving.length) return 0;
+    const rest = this.items.filter((i) => String(i.parent) !== String(from));
+    for (const i of moving) i.parent = to;
+    this.file.data.items = [...rest, ...moving];
+    this.changed();
+    return moving.length;
+  }
+
+  // true when folder `id` is `ancestor` or lies somewhere inside it
+  isInside(id, ancestor) {
+    let cur = this.find(Number(id));
+    while (cur) {
+      if (String(cur.id) === String(ancestor)) return true;
+      cur = this.find(Number(cur.parent));
+    }
+    return false;
+  }
+
+  removeMany(ids) {
+    const doomed = new Set(ids);
     let grew = true;
     while (grew) {
       grew = false;

@@ -81,18 +81,24 @@
     suggest(data) {
       popup.className = 'popup suggest';
       popup.style.width = `${Math.round(data.width)}px`;
-      popup.innerHTML = data.items
-        .map((it, i) => {
-          const ic = it.favicon ? favicon(it.favicon, it.icon) : icon(it.icon || 'globe', 16);
-          return `<div class="sug kind-${it.kind} ${i === data.selected ? 'selected' : ''}" data-i="${i}">
-            <span class="sug-icon">${ic}</span><span class="sug-title">${esc(it.title)}</span><span class="sug-sub">${esc(it.sub || '')}</span></div>`;
-        })
-        .join('');
+      const head = data.title ? `<div class="sug-head">${esc(data.title)}</div>` : '';
+      popup.innerHTML =
+        head +
+        data.items
+          .map((it, i) => {
+            const ic = it.favicon ? favicon(it.favicon, it.icon) : icon(it.icon || 'globe', 16);
+            const remove = it.removable ? `<button class="sug-x" title="${esc(t('omnibox.removeRecent'))}">${icon('close', 13)}</button>` : '';
+            return `<div class="sug kind-${it.kind} ${i === data.selected ? 'selected' : ''}" data-i="${i}">
+            <span class="sug-icon">${ic}</span><span class="sug-title">${esc(it.title)}</span><span class="sug-sub">${esc(it.sub || '')}</span>${remove}</div>`;
+          })
+          .join('');
       fixImages(popup);
       popup.querySelectorAll('.sug').forEach((el) => {
         el.addEventListener('mousedown', (e) => {
           e.preventDefault();
-          action('suggest-pick', { index: Number(el.dataset.i), middle: e.button === 1 });
+          const index = Number(el.dataset.i);
+          if (e.target.closest('.sug-x')) action('suggest-remove', { index });
+          else action('suggest-pick', { index, middle: e.button === 1 });
         });
       });
     },

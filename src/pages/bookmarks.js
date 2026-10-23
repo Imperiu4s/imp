@@ -54,20 +54,38 @@
         isFolder(b)
           ? `<div class="list-row" data-id="${b.id}" draggable="true"><span class="fav">${icon('folder', 18)}</span>
             <a class="grow" href="#" data-open-folder="${b.id}"><div class="title">${esc(b.title)}</div><div class="sub">${esc(t('bmk.items', { n: children(b.id).length }))}</div></a>
-            <div class="actions"><button class="icon-btn" data-act="edit" title="${esc(t('bmk.edit'))}">${icon('edit', 15)}</button>
+            <div class="actions">${toBarButton(b)}<button class="icon-btn" data-act="edit" title="${esc(t('bmk.edit'))}">${icon('edit', 15)}</button>
             <button class="icon-btn" data-act="delete" title="${esc(t('common.delete'))}">${icon('trash', 15)}</button></div></div>`
           : `<div class="list-row" data-id="${b.id}" draggable="${q ? 'false' : 'true'}"><span class="fav">${faviconHtml(b.favicon)}</span>
             <a class="grow" href="${esc(b.url)}" title="${esc(b.url)}"><div class="title">${esc(b.title || b.url)}</div><div class="sub">${esc(hostOf(b.url))}${q ? ` · ${esc(folderName(b.parent))}` : ''}</div></a>
-            <div class="actions"><button class="icon-btn" data-act="edit" title="${esc(t('bmk.edit'))}">${icon('edit', 15)}</button>
+            <div class="actions">${toBarButton(b)}<button class="icon-btn" data-act="edit" title="${esc(t('bmk.edit'))}">${icon('edit', 15)}</button>
             <button class="icon-btn" data-act="delete" title="${esc(t('common.delete'))}">${icon('trash', 15)}</button></div></div>`,
       )
       .join('');
     fixImages(box);
   }
 
+  function toBarButton(b) {
+    return b.parent === 'bar' ? '' : `<button class="icon-btn" data-act="to-bar" title="${esc(t('bmk.moveToBar'))}">${icon('star', 15)}</button>`;
+  }
+
+  // Header above the list: folder name and the one-click actions for the whole folder.
+  function renderFolderBar() {
+    const searching = !!$('#q').value.trim();
+    $('#folder-bar').hidden = searching;
+    if (searching) return;
+    const n = children(folder).length;
+    $('#folder-title').innerHTML = `${esc(folderName(folder))}<span class="count">${esc(t('bmk.items', { n }))}</span>`;
+    const root = folder === 'bar' || folder === 'other';
+    $('#move-all').hidden = folder === 'bar' || n === 0;
+    $('#clear-folder').hidden = root && n === 0;
+    $('#clear-folder-label').textContent = t(root ? 'bmk.emptyFolder' : 'bmk.deleteFolder');
+  }
+
   function render() {
     renderFolders();
     renderItems();
+    renderFolderBar();
   }
 
   async function load() {
@@ -126,6 +144,7 @@
     const id = Number(btn.closest('.list-row').dataset.id);
     const item = items.find((b) => b.id === id);
     if (btn.dataset.act === 'edit') openEditor(item);
+    else if (btn.dataset.act === 'to-bar') await call('bookmarks.move', id, 'bar', null);
     else if (btn.dataset.act === 'delete') {
       if (isFolder(item) && children(id).length && !confirm(t('bmk.deleteFolderConfirm'))) return;
       await call('bookmarks.remove', id);
@@ -165,7 +184,28 @@
     dragId = null;
   });
 
-  $('#q').addEventListener('input', renderItems);
+  $('#q').addEventListener('input', () => {
+    renderItems();
+    renderFolderBar();
+  });
+  $('#move-all').addEventListener('click', async () => {
+    const n = await call('bookmarks.moveChildren', folder, 'bar');
+    if (n) toast(t('bmk.movedN', { n }));
+  });
+  $('#clear-folder').addEventListener('click', async () => {
+    const root = folder === 'bar' || folder === 'other';
+    const n = children(folder).length;
+    if (root) {
+      if (!confirm(t('bmk.emptyConfirm', { n, folder: folderName(folder) }))) return;
+      await call('bookmarks.removeChildren', folder);
+      toast(t('bmk.deletedN', { n }));
+    } else {
+      if (n && !confirm(t('bmk.deleteFolderConfirm'))) return;
+      const parent = items.find((b) => b.id === folder)?.parent ?? 'bar';
+      await call('bookmarks.remove', folder);
+      folder = parent;
+    }
+  });
   $('#add-bm').addEventListener('click', () => openEditor(null, 'bookmark'));
   $('#add-folder').addEventListener('click', () => openEditor(null, 'folder'));
   $('#import').addEventListener('click', async () => {

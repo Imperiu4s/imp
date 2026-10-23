@@ -33,9 +33,8 @@
     'nav.best': 'Best of all',
     'nav.speed': 'Speed',
     'nav.faq': 'FAQ',
-    'nav.github': 'GitHub',
     'nav.download': 'Download',
-    'hero.pill': 'Free and open source',
+    'hero.pill': 'Free and ad-free',
     'hero.title': 'The browser that <span class="grad">stays fast.</span>',
     'hero.lead': 'Imp blocks ads and trackers before they load, puts unused tabs to sleep and stays light on any computer. We gathered the best ideas from every browser — in one place.',
     'hero.download': 'Download for Windows',
@@ -84,7 +83,7 @@
     'f.import': 'Easy switching',
     'f.importD': 'Import bookmarks from Chrome, Edge, Brave, Vivaldi, Opera or an HTML file.',
     'f.update': 'Automatic updates',
-    'f.updateD': 'Imp updates itself from GitHub in the background, finished with one restart.',
+    'f.updateD': 'Imp updates itself in the background, finished with one restart.',
     'best.title': 'The best ideas from every browser',
     'best.lead': 'We didn’t reinvent the wheel — we put together what the others do best.',
     'b.brave': 'Built-in Shields with stats on the New Tab page',
@@ -117,23 +116,21 @@
     'dl.linux': 'Ubuntu, Debian, Fedora and more',
     'dl.appimage': 'AppImage',
     'dl.deb': '.deb package',
-    'dl.note': 'All releases and the source code are on <a class="gh-releases" href="#">GitHub Releases</a>.',
     'dl.version': 'Latest version: {v} · released {d}',
     'faq.title': 'Frequently asked questions',
     q1: 'Is it really free?',
-    a1: 'Yes. Imp is open source (MIT license), has no ads and collects no data about you.',
+    a1: 'Yes. Imp is completely free, has no ads and collects no data about you.',
     q2: 'What engine does it use?',
     a2: 'Chromium (through Electron) — the same engine as Chrome, Edge and Brave, so websites work just like in those browsers.',
     q3: 'Why does Windows show a warning during install?',
-    a3: 'The installer isn’t digitally signed yet (that requires a paid certificate). Click “More info” and then “Run anyway”. The source code and the automated build are public on GitHub.',
+    a3: 'The installer isn’t digitally signed yet (that requires a paid certificate). Click “More info” and then “Run anyway”.',
     q4: 'Do Chrome extensions work?',
     a4: 'Not yet — the built-in Shields replace the most popular extension, the ad blocker. Extension support is on the roadmap.',
     q5: 'How does it update?',
-    a5: 'Automatically: Imp downloads the new version from GitHub in the background and installs it on the next restart.',
+    a5: 'Automatically: Imp downloads the new version in the background and installs it on the next restart.',
     q6: 'Where is my data stored?',
     a6: 'Only on your own computer, in your profile folder. No account, no cloud sync, no telemetry.',
     'footer.tag': 'Fast. Private. Light.',
-    'footer.license': 'MIT license',
     'footer.trademarks': 'Browser names mentioned are trademarks of their owners; Imp is not affiliated with them.',
     'main.win': 'Download for Windows',
     'main.winSub': 'Windows 10 / 11 · 64-bit',
@@ -235,8 +232,6 @@
     $('#lang').textContent = lang === 'hu' ? 'EN' : 'HU';
     document.title = lang === 'hu' ? 'Imp — gyors, privát, könnyű böngésző' : 'Imp — the fast, private, lightweight browser';
 
-    $$('.gh-link').forEach((a) => (a.href = repo ? `https://github.com/${repo}` : '#'));
-    $$('.gh-releases').forEach((a) => (a.href = repo ? `https://github.com/${repo}/releases` : '#download'));
 
     setLink($('#dl-win'), assets.windows);
     setLink($('#dl-mac-arm'), assets.macArm);

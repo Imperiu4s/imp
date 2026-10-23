@@ -3,11 +3,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { WebContentsView, dialog } = require('electron');
 const history = require('./history');
+const omnibox = require('./omnibox');
 const shields = require('./shields');
 const settings = require('./settings');
 const errorPage = require('./error-page');
 const { JsonFile } = require('./store');
 const { t } = require('./i18n');
+const trace = require('./trace');
 
 const PAGE_PRELOAD = path.join(__dirname, '../preload/page.js');
 const NEW_TAB = 'imp://newtab/';
@@ -294,6 +296,7 @@ class Tab {
     });
 
     wc.on('did-stop-loading', () => {
+      trace.mark('first page loaded');
       this.loading = false;
       this.updateNav();
       this.changed();
@@ -342,7 +345,11 @@ class Tab {
       this.findResult = null;
       this.updateNav();
       this.applyZoom();
-      if (!this.isPrivate && settings.get('privacy.saveHistory')) history.addVisit(url, wc.getTitle(), this.typed);
+      if (!this.isPrivate && settings.get('privacy.saveHistory')) {
+        history.addVisit(url, wc.getTitle(), this.typed);
+        const query = omnibox.queryFromUrl(url);
+        if (query) history.addSearch(query);
+      }
       this.typed = false;
       this.changed();
       this.win.onTabNavigated(this);
@@ -352,7 +359,11 @@ class Tab {
       if (!isMainFrame) return;
       this.url = url;
       this.updateNav();
-      if (!this.isPrivate && settings.get('privacy.saveHistory')) history.addVisit(url, wc.getTitle(), false);
+      if (!this.isPrivate && settings.get('privacy.saveHistory')) {
+        history.addVisit(url, wc.getTitle(), false);
+        const query = omnibox.queryFromUrl(url);
+        if (query) history.addSearch(query);
+      }
       this.changed();
     });
 
@@ -424,8 +435,21 @@ class Tab {
     });
 
     wc.on('context-menu', (event, params) => this.win.showPageMenu(this, params));
-    wc.on('before-input-event', (event, input) => this.win.handleInput(event, input, this));
-    wc.on('focus', () => this.win.onTabFocus(this));
+    wc.on('before-input-event', (event, input) => {
+      if (input.type === 'keyDown') this.omniboxFocusUntil = 0;
+      this.win.handleInput(event, input, this);
+    });
+    wc.on('before-mouse-event', (event, mouse) => {
+      if (mouse.type === 'mouseDown') this.omniboxFocusUntil = 0;
+    });
+    wc.on('focus', () => {
+      // A freshly opened new tab page took focus by itself: give it back to the address bar.
+      if (this.omniboxFocusUntil > Date.now() && this.win.activeId === this.id) {
+        setImmediate(() => this.win.focusOmnibox());
+        return;
+      }
+      this.win.onTabFocus(this);
+    });
     wc.on('update-target-url', (event, url) => this.win.showStatus(this, url));
     wc.on('zoom-changed', (event, direction) => this.win.stepZoom(this, direction === 'in' ? 1 : -1));
 

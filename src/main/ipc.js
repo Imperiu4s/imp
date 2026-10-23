@@ -146,6 +146,9 @@ function overlayAction(w, action, p = {}) {
       return w.closePopup();
     case 'suggest-pick':
       return w.send('omnibox:pick', p);
+    case 'suggest-remove':
+      w.webContents.focus();
+      return w.send('omnibox:remove', p);
     case 'command':
       w.closePopup();
       return w.command(p.name, p.arg);
@@ -222,6 +225,14 @@ function init(windowManager, net) {
   manager = windowManager;
   netSession = net;
 
+  // From the tab preload: the pointer is on a link to another site.
+  ipcMain.on('imp:preconnect', (event, origin) => {
+    if (!settings.get('performance.preconnect') || typeof origin !== 'string' || !/^https?:\/\/[^/]+$/.test(origin)) return;
+    try {
+      event.sender.session.preconnect({ url: origin, numSockets: 1 });
+    } catch {}
+  });
+
   // Asked synchronously by the tab preload on Google's sign-in pages.
   ipcMain.on('imp:compat-ua', (event) => {
     event.returnValue = compat.firefoxUA();
@@ -264,6 +275,18 @@ function init(windowManager, net) {
 
   handle('omnibox:suggest', (w, text) => omnibox.suggest(String(text || ''), { isPrivate: w.isPrivate }));
   handle('omnibox:remote', (w, text) => omnibox.remoteSuggestions(String(text || ''), netSession));
+  handle('omnibox:recent', (w) => (w.isPrivate ? [] : history.recentSearches(8)));
+  // Pre-open connections to the search engine (results page and suggestions)
+  // as soon as the address bar is focused, saving a DNS + TLS round trip.
+  on('omnibox:warmup', (w) => {
+    if (!settings.get('performance.preconnect')) return;
+    const e = omnibox.engine();
+    try {
+      w.session.preconnect({ url: new URL(e.search).origin, numSockets: 1 });
+      if (e.suggest && settings.get('search.suggestions')) netSession.preconnect({ url: new URL(e.suggest).origin, numSockets: 1 });
+    } catch {}
+  });
+  handle('omnibox:forget', (w, query) => history.deleteSearch(String(query || '')));
   on('omnibox:preconnect', (w, url) => {
     if (!settings.get('performance.preconnect') || !/^https?:\/\//.test(url)) return;
     try {

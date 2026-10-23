@@ -1,13 +1,13 @@
 {
   "name": "imp-browser",
   "productName": "Imp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Imp – a fast, private, lightweight web browser with built-in ad and tracker blocking.",
   "main": "src/main/main.js",
   "author": {
-    "name": "Imp contributors"
+    "name": "Imperius"
   },
-  "license": "MIT",
+  "license": "UNLICENSED",
   "homepage": "https://github.com/Imperiu4s/imp",
   "repository": {
     "type": "git",
@@ -37,7 +37,7 @@
   "build": {
     "appId": "io.github.imp.browser",
     "productName": "Imp",
-    "copyright": "Copyright © 2026 Imp contributors",
+    "copyright": "Copyright © 2026 Imperius",
     "directories": {
       "output": "dist",
       "buildResources": "build"

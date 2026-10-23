@@ -65,7 +65,8 @@ function localSuggestions(text) {
     }
   }
   for (const h of history.search(text, 8)) {
-    if (seen.has(h.url)) continue;
+    // Search results pages show up as "recent searches" instead.
+    if (seen.has(h.url) || queryFromUrl(h.url)) continue;
     seen.add(h.url);
     out.push({ type: 'history', title: h.title, url: h.url, favicon: h.favicon });
     if (out.length >= 6) break;
@@ -80,8 +81,30 @@ function suggest(text, { isPrivate } = {}) {
     resolved,
     autocomplete: auto,
     items: isPrivate ? [] : localSuggestions(text),
+    recent: isPrivate ? [] : history.matchSearches(text, 3),
     engine: engine().name,
   };
+}
+
+// The search terms in a results page of any known engine, e.g.
+// "https://duckduckgo.com/?q=kutya" -> "kutya". Used to remember your searches.
+const SEARCH_PAGES = Object.values(ENGINES).map((e) => {
+  const u = new URL(e.search.replace('%s', 'IMPQUERY'));
+  const param = [...u.searchParams.entries()].find(([, v]) => v === 'IMPQUERY')[0];
+  return { host: u.hostname.replace(/^www\./, ''), path: u.pathname, param };
+});
+
+function queryFromUrl(url) {
+  let u;
+  try {
+    u = new URL(url);
+  } catch {
+    return null;
+  }
+  const host = u.hostname.replace(/^www\./, '');
+  const page = SEARCH_PAGES.find((p) => p.host === host && p.path === u.pathname);
+  const query = page && u.searchParams.get(page.param);
+  return query && query.trim() ? query.trim() : null;
 }
 
 async function remoteSuggestions(text, net) {
@@ -107,4 +130,4 @@ async function remoteSuggestions(text, net) {
   }
 }
 
-module.exports = { resolve, suggest, remoteSuggestions, searchUrl, engine };
+module.exports = { resolve, suggest, remoteSuggestions, searchUrl, engine, queryFromUrl };

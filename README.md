@@ -5,8 +5,8 @@
 <h1 align="center">Imp</h1>
 
 <p align="center">
-  <b>Gyors. Privát. Könnyű.</b> — Ingyenes, nyílt forráskódú böngésző beépített reklám- és követőblokkolással.<br>
-  <i>Fast. Private. Light. — a free, open-source browser with built-in ad &amp; tracker blocking.</i>
+  <b>Gyors. Privát. Könnyű.</b> — Ingyenes, gyors és privát böngésző beépített reklám- és követőblokkolással.<br>
+  <i>Fast. Private. Light. — a free, fast and private browser with built-in ad &amp; tracker blocking.</i>
 </p>
 
 <p align="center">
@@ -97,10 +97,11 @@ them to Releases. The download site in `site/` is deployed to GitHub Pages (Sett
 
 Not yet supported: Chrome Web Store extensions, sync, a password manager.
 
-## Credits & license
+## Licenc / License
 
-Imp is released under the [MIT license](LICENSE). It is built with
-[Electron](https://www.electronjs.org/) / Chromium, the [Ghostery adblocker](https://github.com/ghostery/adblocker) engine (MPL-2.0),
+© 2026 Imperius. Minden jog fenntartva / All rights reserved — lásd / see [LICENSE](LICENSE).
+
+Felhasznált összetevők / Built with: [Electron](https://www.electronjs.org/) / Chromium, the [Ghostery adblocker](https://github.com/ghostery/adblocker) engine (MPL-2.0),
 [Mozilla Readability](https://github.com/mozilla/readability) (Apache-2.0), [tldts](https://github.com/remusao/tldts) (MIT)
 and [electron-builder](https://www.electron.build/). Browser names mentioned are trademarks of their owners;
 Imp is not affiliated with them.

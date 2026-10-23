@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Imp — gyors, privát, könnyű böngésző</title>
-  <meta name="description" content="Imp: ingyenes, nyílt forráskódú böngésző beépített reklám- és követőblokkolással, alvó lapokkal, osztott nézettel és függőleges lapokkal.">
+  <meta name="description" content="Imp: ingyenes, gyors és privát böngésző beépített reklám- és követőblokkolással, alvó lapokkal, osztott nézettel és függőleges lapokkal.">
   <meta name="theme-color" content="#0b0f1f">
   <meta property="og:title" content="Imp — Fast. Private. Light.">
-  <meta property="og:description" content="A free, open-source browser with built-in ad & tracker blocking, sleeping tabs, split view and vertical tabs.">
+  <meta property="og:description" content="A free, fast and private browser with built-in ad & tracker blocking, sleeping tabs, split view and vertical tabs.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://imperiu4s.github.io/imp/">
   <meta property="og:image" content="https://imperiu4s.github.io/imp/assets/icon-512.png">
@@ -27,7 +27,6 @@
       <a href="#best" data-i18n="nav.best">A legjobbakból</a>
       <a href="#speed" data-i18n="nav.speed">Sebesség</a>
       <a href="#faq" data-i18n="nav.faq">GYIK</a>
-      <a class="gh-link" href="#" data-i18n="nav.github">GitHub</a>
     </nav>
     <div class="nav-actions">
       <button class="lang" id="lang" type="button" aria-label="Language">EN</button>
@@ -38,7 +37,7 @@
   <main id="top">
     <section class="hero">
       <div class="hero-text">
-        <span class="pill"><span class="dot"></span><span data-i18n="hero.pill">Ingyenes és nyílt forráskódú</span></span>
+        <span class="pill"><span class="dot"></span><span data-i18n="hero.pill">Ingyenes és reklámmentes</span></span>
         <h1 data-i18n-html="hero.title">A böngésző, ami <span class="grad">gyors marad.</span></h1>
         <p class="lead" data-i18n="hero.lead">Az Imp már betöltés előtt letiltja a reklámokat és a követőket, elaltatja a nem használt lapokat, és bármilyen gépen könnyű marad. A legjobb ötleteket gyűjtöttük össze az összes böngészőből — egy helyen.</p>
         <div class="cta">
@@ -108,7 +107,7 @@
         <article class="card"><div class="ic c3" data-icon="zap"></div><h3 data-i18n="f.task">Feladatkezelő</h3><p data-i18n="f.taskD">Lásd, melyik lap mennyi memóriát és CPU-t használ — és altasd vagy zárd be egy kattintással.</p></article>
         <article class="card"><div class="ic c4" data-icon="incognito"></div><h3 data-i18n="f.private">Privát ablakok</h3><p data-i18n="f.privateD">Minden privát ablak külön, memóriában tartott munkamenetet kap; bezáráskor minden törlődik.</p></article>
         <article class="card"><div class="ic c5" data-icon="download"></div><h3 data-i18n="f.import">Egyszerű átállás</h3><p data-i18n="f.importD">Könyvjelzők importálása Chrome-ból, Edge-ből, Brave-ből, Vivaldiból, Operából vagy HTML-fájlból.</p></article>
-        <article class="card"><div class="ic c6" data-icon="refresh"></div><h3 data-i18n="f.update">Automatikus frissítés</h3><p data-i18n="f.updateD">Az Imp a háttérben frissül a GitHubról, és egy újraindítással kész.</p></article>
+        <article class="card"><div class="ic c6" data-icon="refresh"></div><h3 data-i18n="f.update">Automatikus frissítés</h3><p data-i18n="f.updateD">Az Imp a háttérben frissíti magát, és egy újraindítással kész.</p></article>
       </div>
     </section>
 
@@ -176,16 +175,15 @@
           <a class="btn ghost" id="dl-deb" href="#" data-i18n="dl.deb">.deb csomag</a>
         </div>
       </div>
-      <p class="fine center" id="dl-note" data-i18n-html="dl.note">Minden kiadás és a forráskód megtalálható a <a class="gh-releases" href="#">GitHub Releases</a> oldalon.</p>
     </section>
 
     <section class="section narrow" id="faq">
       <h2 class="section-title" data-i18n="faq.title">Gyakori kérdések</h2>
-      <details><summary data-i18n="q1">Tényleg ingyenes?</summary><p data-i18n="a1">Igen. Az Imp nyílt forráskódú (MIT licenc), nincs benne reklám, és nem gyűjt rólad adatot.</p></details>
+      <details><summary data-i18n="q1">Tényleg ingyenes?</summary><p data-i18n="a1">Igen. Az Imp teljesen ingyenes, nincs benne reklám, és nem gyűjt rólad adatot.</p></details>
       <details><summary data-i18n="q2">Milyen motorra épül?</summary><p data-i18n="a2">A Chromium motorra (Electron-on keresztül) — ugyanarra, amelyre a Chrome, az Edge és a Brave is. Így a weboldalak ugyanúgy működnek, mint ezekben.</p></details>
-      <details><summary data-i18n="q3">Miért ír ki figyelmeztetést a Windows telepítéskor?</summary><p data-i18n="a3">A telepítő még nincs digitálisan aláírva (ez fizetős tanúsítvány). Kattints a „További információ”, majd a „Futtatás mindenképp” gombra. A forráskód és az automatikus build nyilvános a GitHubon.</p></details>
+      <details><summary data-i18n="q3">Miért ír ki figyelmeztetést a Windows telepítéskor?</summary><p data-i18n="a3">A telepítő még nincs digitálisan aláírva (ez fizetős tanúsítvány). Kattints a „További információ”, majd a „Futtatás mindenképp” gombra.</p></details>
       <details><summary data-i18n="q4">Működnek a Chrome-bővítmények?</summary><p data-i18n="a4">Még nem — a beépített Shields kiváltja a legnépszerűbb bővítményt, a reklámblokkolót. A bővítménytámogatás a tervek között szerepel.</p></details>
-      <details><summary data-i18n="q5">Hogyan frissül?</summary><p data-i18n="a5">Automatikusan: az Imp a háttérben letölti az új verziót a GitHubról, és a következő újraindításkor telepíti.</p></details>
+      <details><summary data-i18n="q5">Hogyan frissül?</summary><p data-i18n="a5">Automatikusan: az Imp a háttérben letölti az új verziót, és a következő újraindításkor telepíti.</p></details>
       <details><summary data-i18n="q6">Hol tárolja az adataimat?</summary><p data-i18n="a6">Csak a saját gépeden, a profilmappádban. Nincs fiók, nincs felhős szinkronizálás, nincs telemetria.</p></details>
     </section>
   </main>
@@ -193,7 +191,7 @@
   <footer class="footer">
     <div class="brand"><img src="assets/icon.svg" width="24" height="24" alt=""><span>Imp</span></div>
     <p data-i18n="footer.tag">Gyors. Privát. Könnyű.</p>
-    <p class="fine"><a class="gh-link" href="#">GitHub</a> · <span data-i18n="footer.license">MIT licenc</span> · <span data-i18n="footer.trademarks">Az említett böngészőnevek tulajdonosaik védjegyei; az Imp nem áll kapcsolatban velük.</span></p>
+    <p class="fine">© 2026 Imp · <span data-i18n="footer.trademarks">Az említett böngészőnevek tulajdonosaik védjegyei; az Imp nem áll kapcsolatban velük.</span></p>
   </footer>
 
   <script src="config.js"></script>

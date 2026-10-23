@@ -173,6 +173,37 @@ body {
   display: none;
 }
 
+.sug-head {
+  padding: 6px 12px 4px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.sug-x {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin-left: auto;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  color: var(--text-2);
+  opacity: 0;
+}
+
+.sug:hover .sug-x,
+.sug.selected .sug-x {
+  opacity: 1;
+}
+
+.sug-x:hover {
+  background: var(--press);
+  color: var(--text);
+}
+
 .sug.kind-url .sug-sub,
 .sug.kind-history .sug-sub,
 .sug.kind-bookmark .sug-sub {

@@ -45,7 +45,7 @@ const DEFAULTS = {
   },
   performance: {
     sleepingTabs: true,
-    sleepAfter: 15, // minutes
+    sleepAfter: 10, // minutes
     efficiency: 'auto', // auto | on | off
     hardwareAcceleration: true,
     preconnect: true,
