@@ -12,6 +12,7 @@ const menus = require('./menus');
 const reader = require('./reader');
 const { t, lang } = require('./i18n');
 const trace = require('./trace');
+const autofill = require('./autofill');
 
 const UI_PRELOAD = path.join(__dirname, '../preload/ui.js');
 const UI_HTML = path.join(__dirname, '../ui/index.html');
@@ -562,7 +563,7 @@ class BrowserWin {
       this.tabChanged(tab);
       this.sendTabs();
     }
-    if (this.popup && this.popup.type !== 'suggest') this.closePopup(null, true);
+    if (this.popup && this.popup.type !== 'suggest' && this.popup.type !== 'pwfill') this.closePopup(null, true);
   }
 
   onTabNavigated(tab) {
@@ -605,6 +606,9 @@ class BrowserWin {
         if (this.popup?.focus && !wc.isDestroyed() && !wc.isFocused()) this.closePopup(null, true);
       }, 30);
     });
+    wc.on('focus', () => {
+      if (this.popup?.type === 'pwsave') this.popup.focus = true;
+    });
     this.overlay = view;
     return view;
   }
@@ -633,7 +637,10 @@ class BrowserWin {
     this.ensureOverlay();
     this.bubble = null;
     const id = ++popupSeq;
-    this.popup = { id, type, anchor, align: anchor?.align || 'left', focus: type !== 'suggest', focused: false };
+    // The address bar suggestions and the saved-password list leave the keyboard where
+    // it is; the save-password prompt takes it only once you click into it.
+    const focus = !['suggest', 'pwfill', 'pwsave'].includes(type);
+    this.popup = { id, type, anchor, align: anchor?.align || 'left', focus, focused: false };
     const [, ch] = this.win.getContentSize();
     const maxHeight = Math.max(160, ch - Math.round((anchor?.y || 0) + (anchor?.height || 0)) - 8);
     this.sendOverlay('popup:show', { id, type, data, maxHeight });
@@ -687,6 +694,7 @@ class BrowserWin {
     const closed = this.popup;
     this.popup = null;
     if (closed.type === 'auth' && this.pendingAuth) this.finishAuth(null);
+    if (closed.type === 'pwfill') autofill.listClosed(this);
     const hadFocus = this.overlay && !this.overlay.webContents.isDestroyed() && this.overlay.webContents.isFocused();
     this.detachOverlay();
     this.sendOverlay('popup:hide', { id: closed.id });
@@ -831,6 +839,7 @@ class BrowserWin {
     } else {
       tab.typed = typed;
       tab.load(resolved.url);
+      tab.omniboxFocusUntil = 0;
       tab.wc?.focus();
     }
   }
@@ -956,6 +965,8 @@ class BrowserWin {
         return settings.set('appearance.bookmarksBar', settings.get('appearance.bookmarksBar') === 'always' ? 'never' : 'always');
       case 'open-bookmarks':
         return this.openInternal('bookmarks');
+      case 'open-passwords':
+        return this.openInternal('passwords');
       case 'open-history':
         return this.openInternal('history');
       case 'open-downloads':

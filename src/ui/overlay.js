@@ -132,6 +132,7 @@
           ${cmd('history', 'menu.history', 'open-history', `${MOD}+H`)}
           ${cmd('download', 'menu.downloads', 'open-downloads', `${MOD}+J`)}
           ${cmd('bookmark', 'menu.bookmarks', 'open-bookmarks', `${MOD}+Shift+O`)}
+          ${cmd('password', 'menu.passwords', 'open-passwords', '')}
         </div>
         <div class="section">
           ${cmd('search', 'menu.find', 'find', `${MOD}+F`)}
@@ -397,6 +398,70 @@
       popup.querySelector('#auth-cancel').addEventListener('click', close);
     },
 
+    // Saved accounts under a login field of the page.
+    pwfill(data) {
+      popup.className = 'popup suggest pwfill';
+      popup.style.width = `${Math.round(data.width || 280)}px`;
+      popup.innerHTML =
+        `<div class="sug-head">${esc(t('pw.savedFor'))}</div>` +
+        data.items
+          .map(
+            (it, i) => `<div class="sug ${i === data.selected ? 'selected' : ''}" data-i="${i}">
+            <span class="sug-icon">${icon('key', 16)}</span><span class="pw-user">${esc(it.username || t('pw.noUsername'))}</span>
+            <span class="pw-dots">••••••••</span>${it.host ? `<span class="pw-host">${esc(it.host)}</span>` : ''}</div>`,
+          )
+          .join('') +
+        `<div class="pw-foot"><button class="pw-manage">${icon('settings', 14)}${esc(t('pw.manage'))}</button></div>`;
+      popup.querySelectorAll('.sug').forEach((el) => {
+        el.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          action('pw-fill', { index: Number(el.dataset.i) });
+        });
+      });
+      popup.querySelector('.pw-manage').addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        action('pw-manage');
+      });
+    },
+
+    // "Save password?" after signing in.
+    pwsave(data) {
+      popup.className = 'popup pwsave';
+      popup.style.width = '360px';
+      popup.innerHTML = `
+        <div class="head">${icon('key', 18, 'accent')}<h3>${esc(t(data.update ? 'pw.updateTitle' : 'pw.saveTitle'))}</h3>
+          <button class="icon-btn small" id="pw-close" title="${esc(t('common.close'))}">${icon('close', 15)}</button></div>
+        <div class="kv muted pw-site">${icon('globe', 15)}<span class="grow">${esc(data.host)}</span></div>
+        <form class="form" id="pw-form">
+          <label>${esc(t('pw.username'))}<input id="pw-user" value="${esc(data.username)}" spellcheck="false" autocomplete="off"></label>
+          <label>${esc(t('pw.password'))}<span class="pw-field"><input id="pw-pass" type="password" value="${esc(data.password)}" spellcheck="false" autocomplete="off">
+            <button type="button" class="icon-btn small" id="pw-eye" title="${esc(t('pw.show'))}">${icon('eye', 15)}</button></span></label>
+          <div class="buttons"><button type="button" class="btn ghost" id="pw-never">${esc(t('pw.never'))}</button>
+          <button type="submit" class="btn primary">${esc(t(data.update ? 'pw.update' : 'pw.save'))}</button></div>
+        </form>`;
+      const pass = popup.querySelector('#pw-pass');
+      popup.querySelector('#pw-eye').addEventListener('click', (e) => {
+        const show = pass.type === 'password';
+        pass.type = show ? 'text' : 'password';
+        e.currentTarget.innerHTML = icon(show ? 'eyeOff' : 'eye', 15);
+        e.currentTarget.title = t(show ? 'pw.hide' : 'pw.show');
+      });
+      popup.querySelector('#pw-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        action('pw-save', { username: popup.querySelector('#pw-user').value, password: pass.value });
+      });
+      popup.querySelector('#pw-never').addEventListener('click', () => action('pw-never'));
+      popup.querySelector('#pw-close').addEventListener('click', close);
+      // Shown by itself after signing in: tuck it away after a while if you
+      // don't touch it (the key in the address bar brings it back).
+      if (data.auto) {
+        const timer = setTimeout(close, 20000);
+        const keep = () => clearTimeout(timer);
+        popup.addEventListener('pointerenter', keep, { once: true });
+        popup.addEventListener('focusin', keep, { once: true });
+      }
+    },
+
     palette() {
       popup.className = 'popup palette';
       popup.style.width = `${Math.min(640, window.screen.availWidth - 80)}px`;
@@ -499,6 +564,7 @@
     { name: 'open-history', key: 'menu.history', icon: 'history', kbd: `${MOD}+H` },
     { name: 'open-downloads', key: 'menu.downloads', icon: 'download', kbd: `${MOD}+J` },
     { name: 'open-bookmarks', key: 'menu.bookmarks', icon: 'bookmark', kbd: `${MOD}+Shift+O` },
+    { name: 'open-passwords', key: 'menu.passwords', icon: 'password', kbd: '' },
     { name: 'open-settings', key: 'menu.settings', icon: 'settings', kbd: `${MOD}+,` },
     { name: 'open-performance', key: 'menu.taskManager', icon: 'zap', kbd: 'Shift+Esc' },
     { name: 'toggle-split', key: 'menu.split', icon: 'split', kbd: `${MOD}+Shift+E` },
@@ -553,7 +619,7 @@
   api.on('popup:update', ({ id, type, data }) => {
     if (!current || current.id !== id || current.type !== type) return;
     current.data = data;
-    if (type === 'suggest') renderers.suggest(data);
+    if (type === 'suggest' || type === 'pwfill') renderers[type](data);
     else if (type !== 'bookmark' && type !== 'palette') renderers[type]?.(data);
     reportSize();
   });

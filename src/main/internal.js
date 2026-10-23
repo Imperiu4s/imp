@@ -2,7 +2,7 @@
 // imp:// internal pages: the protocol handler and the privileged API they use.
 const fs = require('node:fs');
 const path = require('node:path');
-const { app, ipcMain, dialog, shell } = require('electron');
+const { app, ipcMain, dialog, shell, clipboard } = require('electron');
 const settings = require('./settings');
 const history = require('./history');
 const bookmarks = require('./bookmarks');
@@ -11,12 +11,13 @@ const permissions = require('./permissions');
 const shields = require('./shields');
 const shortcuts = require('./shortcuts');
 const reader = require('./reader');
+const passwords = require('./passwords');
 const ENGINES = require('../shared/engines');
 
 const PAGES_DIR = path.join(__dirname, '../pages');
 const SHARED_DIR = path.join(__dirname, '../shared');
 const ASSETS_DIR = path.join(__dirname, '../ui/assets');
-const PAGES = new Set(['newtab', 'settings', 'history', 'bookmarks', 'downloads', 'performance', 'reader', 'welcome']);
+const PAGES = new Set(['newtab', 'settings', 'history', 'bookmarks', 'downloads', 'performance', 'reader', 'welcome', 'passwords']);
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -211,6 +212,41 @@ const API = {
     const res = await dialog.showSaveDialog(ctx.win?.win, { defaultPath: path.join(app.getPath('documents'), 'imp-bookmarks.html') });
     if (res.canceled || !res.filePath) return false;
     bookmarks.exportHtml(res.filePath);
+    return true;
+  },
+
+  'passwords.list': () => ({ logins: passwords.list(), never: passwords.never() }),
+  'passwords.count': () => passwords.count(),
+  'passwords.reveal': (id) => passwords.reveal(Number(id)),
+  'passwords.copy': (id, field) => {
+    const login = passwords.get(Number(id));
+    if (!login) return false;
+    const text = field === 'username' ? login.username : passwords.reveal(login.id);
+    if (text == null) return false;
+    clipboard.writeText(text);
+    return true;
+  },
+  'passwords.add': (item) => passwords.save({ url: String(item?.url || ''), username: String(item?.username || ''), password: String(item?.password || '') }),
+  'passwords.update': (id, patch) => passwords.update(Number(id), patch || {}),
+  'passwords.remove': (id) => passwords.remove(Number(id)),
+  'passwords.removeAll': () => passwords.removeAll(),
+  'passwords.removeNever': (origin) => passwords.removeNever(String(origin)),
+  'passwords.importCsv': async (ctx) => {
+    const res = await dialog.showOpenDialog(ctx.win?.win, { properties: ['openFile'], filters: [{ name: 'CSV', extensions: ['csv'] }] });
+    if (res.canceled || !res.filePaths[0]) return null;
+    try {
+      return passwords.importCsv(await fs.promises.readFile(res.filePaths[0], 'utf8'));
+    } catch {
+      return { error: true };
+    }
+  },
+  'passwords.exportCsv': async (ctx) => {
+    const res = await dialog.showSaveDialog(ctx.win?.win, {
+      defaultPath: path.join(app.getPath('documents'), 'imp-passwords.csv'),
+      filters: [{ name: 'CSV', extensions: ['csv'] }],
+    });
+    if (res.canceled || !res.filePath) return false;
+    await fs.promises.writeFile(res.filePath, passwords.exportCsv(), 'utf8');
     return true;
   },
 

@@ -151,6 +151,7 @@ function start() {
     configureDns();
     internal.init(manager, updater);
     ipc.init(manager, net);
+    require('./autofill').init(manager);
 
     settings.on('change', (key, value) => {
       manager.broadcast('state:settings', settings.data);

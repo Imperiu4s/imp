@@ -1,7 +1,7 @@
 {
   "name": "imp-browser",
   "productName": "Imp",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Imp – a fast, private, lightweight web browser with built-in ad and tracker blocking.",
   "main": "src/main/main.js",
   "author": {

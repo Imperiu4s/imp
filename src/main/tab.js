@@ -7,6 +7,7 @@ const omnibox = require('./omnibox');
 const shields = require('./shields');
 const settings = require('./settings');
 const errorPage = require('./error-page');
+const autofill = require('./autofill');
 const { JsonFile } = require('./store');
 const { t } = require('./i18n');
 const trace = require('./trace');
@@ -199,6 +200,7 @@ class Tab {
       canGoForward: this.canGoForward,
       shieldsOn: !shields.isAllowlisted(shields.hostOf(url)),
       permission: this.permissionRequests[0] ? { origin: this.permissionRequests[0].origin, kinds: this.permissionRequests[0].kinds } : null,
+      passwordOffer: !!this.passwordOffer,
     };
   }
 
@@ -351,6 +353,7 @@ class Tab {
         if (query) history.addSearch(query);
       }
       this.typed = false;
+      autofill.onNavigate(this);
       this.changed();
       this.win.onTabNavigated(this);
     });
@@ -364,6 +367,7 @@ class Tab {
         const query = omnibox.queryFromUrl(url);
         if (query) history.addSearch(query);
       }
+      autofill.onNavigate(this);
       this.changed();
     });
 

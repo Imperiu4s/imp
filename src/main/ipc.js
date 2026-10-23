@@ -10,6 +10,7 @@ const history = require('./history');
 const omnibox = require('./omnibox');
 const menus = require('./menus');
 const compat = require('./compat');
+const autofill = require('./autofill');
 const Tab = require('./tab');
 const { t } = require('./i18n');
 
@@ -81,6 +82,10 @@ function popupData(w, type, extra = {}) {
         created: !!extra.created,
       };
     }
+    case 'pwsave': {
+      const offer = autofill.offerData(tab);
+      return offer && { ...offer, auto: !!extra.auto };
+    }
     case 'bmfolder': {
       const parent = extra.folder;
       return {
@@ -144,6 +149,18 @@ function overlayAction(w, action, p = {}) {
     case 'auth-submit':
       w.finishAuth(p.user ?? '', p.pass ?? '');
       return w.closePopup();
+    case 'pw-fill':
+      return autofill.fill(w, Number(p.index));
+    case 'pw-save':
+      autofill.save(tab, { username: p.username, password: p.password });
+      w.closePopup();
+      return w.toast(t('pw.saved'));
+    case 'pw-never':
+      autofill.never(tab);
+      return w.closePopup();
+    case 'pw-manage':
+      w.closePopup();
+      return w.command('open-passwords');
     case 'suggest-pick':
       return w.send('omnibox:pick', p);
     case 'suggest-remove':
@@ -268,6 +285,7 @@ function init(windowManager, net) {
       if (tab) {
         tab.typed = !!opts.typed;
         tab.load(url);
+        tab.omniboxFocusUntil = 0;
         tab.wc?.focus();
       } else w.createTab({ url });
     }
@@ -309,6 +327,7 @@ function init(windowManager, net) {
       data = popupData(w, 'bookmark', { created });
     } else if (type !== 'suggest' && type !== 'palette') {
       data = popupData(w, type, extra || {});
+      if (type === 'pwsave' && !data) return;
     }
     w.openPopup(type, anchor, data);
   });

@@ -192,9 +192,12 @@ body.mac.fullscreen-native .mac-space {
 .tab {
   position: relative;
   height: 32px;
-  /* wide tabs; with many tabs they shrink to 100px, then the strip scrolls */
-  flex: 0 1 290px;
-  min-width: 100px;
+  /* Wide tabs; with many tabs they shrink to 110px, then the strip scrolls.
+     A fixed width (not flex-basis) so the strip's own width counts it too:
+     otherwise each tab only gets as wide as its title. */
+  flex: 0 1 auto;
+  width: 300px;
+  min-width: 110px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -220,6 +223,7 @@ body.mac.fullscreen-native .mac-space {
 
 .tab.pinned {
   flex: 0 0 40px;
+  width: 40px;
   min-width: 40px;
   padding: 0;
   justify-content: center;
@@ -802,6 +806,7 @@ body:not(.vertical) .vertical-only {
 
 .tabs.vertical .tab {
   flex: none;
+  width: auto;
   height: 34px;
   min-width: 0;
 }

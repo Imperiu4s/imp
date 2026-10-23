@@ -61,6 +61,7 @@
   setIcon('#btn-reload', 'reload');
   setIcon('#btn-home', 'home');
   setIcon('#btn-reader', 'reader', 16);
+  setIcon('#btn-key', 'key', 16);
   setIcon('#btn-star', 'star', 16);
   setIcon('#btn-shields', 'shieldCheck', 18);
   setIcon('#btn-split', 'split');
@@ -214,7 +215,7 @@
       lastActiveId = state.activeId;
       attention.delete(state.activeId);
       closeFind(false);
-      if (document.activeElement !== urlInput) userTyped = false;
+      if (!editingUrl()) userTyped = false;
       tabEls.get(state.activeId)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     }
     updateNarrow();
@@ -230,7 +231,7 @@
       return;
     }
     const sample = [...tabEls.values()].find((el) => !el.classList.contains('pinned'));
-    const narrow = sample ? sample.getBoundingClientRect().width < 112 : false;
+    const narrow = sample ? sample.getBoundingClientRect().width < 124 : false;
     for (const el of tabEls.values()) el.classList.toggle('narrow', narrow);
   }
 
@@ -305,6 +306,10 @@
   const urlInput = $('#url');
   const omnibox = $('#omnibox');
   let userTyped = false;
+  let windowFocused = true;
+  // The address bar is being edited. After Enter the page takes the focus, but the
+  // input stays the document's activeElement, so check that the UI has focus too.
+  const editingUrl = () => document.activeElement === urlInput && document.hasFocus();
 
   function displayUrl(url) {
     if (!url || url === NEW_TAB) return '';
@@ -346,10 +351,10 @@
     }
     $('#loadbar').classList.toggle('loading', loading);
 
-    if (document.activeElement !== urlInput && !userTyped) {
+    if (!editingUrl() && !userTyped) {
       const value = displayUrl(tab?.url);
       if (urlInput.value !== value) urlInput.value = value;
-    } else if (document.activeElement === urlInput && !userTyped) {
+    } else if (editingUrl() && !userTyped) {
       const value = fullUrl(tab);
       if (urlInput.value !== value && urlInput.selectionStart === 0 && urlInput.selectionEnd === urlInput.value.length) {
         urlInput.value = value;
@@ -392,6 +397,8 @@
       star.title = t(state.bookmarked ? 'tip.editBookmark' : 'tip.bookmark');
     }
 
+    $('#btn-key').hidden = !tab?.passwordOffer;
+
     const reader = $('#btn-reader');
     const inReader = url.startsWith('imp://reader/');
     reader.hidden = !(tab?.readerable || inReader);
@@ -426,6 +433,7 @@
     $('#btn-menu').classList.toggle('on', popupOpen === 'menu');
     $('#btn-downloads').classList.toggle('on', popupOpen === 'downloads');
     $('#site-btn').classList.toggle('on', popupOpen === 'siteinfo');
+    $('#btn-key').classList.toggle('on', popupOpen === 'pwsave');
     if (popupOpen === 'shields') $('#btn-shields').classList.add('pressed');
     else $('#btn-shields').classList.remove('pressed');
   }
@@ -463,6 +471,7 @@
     togglePopup('siteinfo', e.currentTarget, 'left');
   });
   $('#btn-star').addEventListener('click', (e) => togglePopup('bookmark', e.currentTarget));
+  $('#btn-key').addEventListener('click', (e) => togglePopup('pwsave', e.currentTarget));
   $('#new-tab-h').addEventListener('click', () => api.send('tab:new', {}));
   $('#new-tab-v').addEventListener('click', () => api.send('tab:new', {}));
   $('#btn-sidebar').addEventListener('click', () => api.send('ui:setting', 'appearance.sidebarCollapsed', !settings.appearance.sidebarCollapsed));
@@ -516,10 +525,14 @@
   urlInput.addEventListener('blur', () => {
     omnibox.classList.remove('focused');
     setTimeout(() => {
-      if (document.activeElement === urlInput) return;
+      if (editingUrl()) return;
+      suggest.seq++;
       closeSuggest();
+      // Switching to another app keeps what you typed, like other browsers do.
+      if (userTyped && !windowFocused) return;
       userTyped = false;
       urlInput.value = displayUrl(activeTab()?.url);
+      urlInput.setSelectionRange(0, 0);
       urlInput.scrollLeft = 0;
     }, 150);
   });
@@ -534,7 +547,7 @@
   async function showRecent() {
     const seq = ++suggest.seq;
     const list = await api.invoke('omnibox:recent');
-    if (seq !== suggest.seq || userTyped || document.activeElement !== urlInput || !Array.isArray(list)) return;
+    if (seq !== suggest.seq || userTyped || !editingUrl() || !Array.isArray(list)) return;
     if (!list.length) return closeSuggest();
     suggest.zero = true;
     suggest.text = '';
@@ -670,6 +683,8 @@
   }
 
   function finishOmnibox() {
+    // Suggestions still on their way must not reopen the list over the page.
+    suggest.seq++;
     closeSuggest();
     userTyped = false;
     suggest.zero = false;
@@ -706,6 +721,7 @@
     } else if (e.key === 'Escape') {
       e.preventDefault();
       if (suggest.open) {
+        suggest.seq++;
         closeSuggest();
         urlInput.value = suggest.zero ? fullUrl(activeTab()) : suggest.text;
         if (suggest.zero) urlInput.select();
@@ -1020,7 +1036,10 @@
     count.textContent = t('find.count', { active: r.total ? r.active : 0, total: r.total });
     findInput.classList.toggle('nomatch', r.total === 0);
   });
-  api.on('win:focus', (focused) => document.body.classList.toggle('inactive', !focused));
+  api.on('win:focus', (focused) => {
+    windowFocused = focused;
+    document.body.classList.toggle('inactive', !focused);
+  });
   api.on('win:fullscreen', (on) => {
     winFullscreen = on;
     setFullscreen();
@@ -1033,6 +1052,11 @@
     urlInput.focus();
     urlInput.select();
     if (opts?.recent && !userTyped) showRecent();
+  });
+  // You signed in somewhere: offer to save the password (unless a popup is already open).
+  api.on('ui:password-offer', () => {
+    const key = $('#btn-key');
+    if (!key.hidden && !popupOpen) togglePopup('pwsave', key, 'right', { auto: true });
   });
   api.on('ui:find', () => openFind());
   api.on('ui:find-step', ({ forward }) => findStep(forward));

@@ -5,7 +5,7 @@
   const content = $('#content');
   let S = await window.Page.init();
   let info = await call('app.info');
-  let lists = { permissions: [], shortcuts: [], imports: [], dlDir: '' };
+  let lists = { permissions: [], shortcuts: [], imports: [], dlDir: '', passwordCount: 0 };
 
   const SECTIONS = [
     { id: 'appearance', icon: 'sun' },
@@ -13,6 +13,7 @@
     { id: 'search', icon: 'search' },
     { id: 'shields', icon: 'shieldCheck' },
     { id: 'privacy', icon: 'lock' },
+    { id: 'passwords', icon: 'password' },
     { id: 'permissions', icon: 'key' },
     { id: 'performance', icon: 'zap' },
     { id: 'downloads', icon: 'download' },
@@ -183,6 +184,18 @@
         'set.privacy.intro',
       ),
 
+    passwords: () =>
+      section(
+        'passwords',
+        `<div class="group">
+          ${sw('passwords.offer', 'set.pw.offer', 'set.pw.offer.desc')}
+          ${sw('passwords.autofill', 'set.pw.autofill', 'set.pw.autofill.desc')}
+          <div class="item"><div class="text"><div class="label">${esc(t('set.pw.manage'))}</div><div class="desc">${esc(t('set.pw.manage.desc', { n: lists.passwordCount }))}</div></div>
+            <a class="btn" href="imp://passwords/">${icon('key', 15)}${esc(t('set.pw.open'))}</a></div>
+        </div>`,
+        'set.passwords.intro',
+      ),
+
     permissions: () => {
       const KIND = (k) => t(`permName.${k}`);
       const rows = lists.permissions.length
@@ -297,13 +310,14 @@
 
   // ---- rendering ------------------------------------------------------------------------
   async function loadLists() {
-    const [permissions, shortcuts, imports, dlDir] = await Promise.all([
+    const [permissions, shortcuts, imports, dlDir, passwordCount] = await Promise.all([
       call('permissions.list'),
       call('shortcuts.list'),
       call('bookmarks.importSources'),
       call('downloads.dir'),
+      call('passwords.count'),
     ]);
-    lists = { permissions, shortcuts, imports, dlDir };
+    lists = { permissions, shortcuts, imports, dlDir, passwordCount };
   }
 
   async function renderStats() {
@@ -476,6 +490,9 @@
   window.Page.onEvent(async (type) => {
     if (type === 'update') {
       info = await call('app.info');
+      render();
+    } else if (type === 'passwords') {
+      await loadLists();
       render();
     }
   });

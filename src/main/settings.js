@@ -54,6 +54,10 @@ const DEFAULTS = {
     dir: '',
     ask: false,
   },
+  passwords: {
+    offer: true, // offer to save passwords after signing in
+    autofill: true, // list saved accounts under login fields
+  },
   meta: {
     firstRunDone: false,
     lastVersion: '',

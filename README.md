@@ -33,6 +33,7 @@ gyorsparancsait és függőleges lapjait, a Firefox olvasó módját és HTTPS-o
 - **Adatvédelem** – automatikus HTTPS-re váltás (vagy HTTPS-only mód), harmadik féltől származó sütik tiltása, Global Privacy Control, biztonságos DNS (DNS-over-HTTPS), privát ablakok külön munkamenettel.
 - **Teljesítmény** – alvó lapok (a háttérlapok felszabadítják a memóriát, ébredéskor megmarad a görgetés és az előzmény), takarékos mód akkumulátoron, „lusta” munkamenet-visszaállítás, előzetes kapcsolódás, kikapcsolható hardveres gyorsítás, beépített feladatkezelő.
 - **Kényelem** – okos címsor kiegészítéssel és javaslatokkal, osztott nézet, függőleges lapok, gyorsparancs-paletta (Ctrl+Shift+A), olvasó mód, képernyőkép (látható rész vagy teljes oldal), oldalfordítás, kép a képben, keresés az oldalon, nagyítás oldalanként.
+- **Jelszókezelő** – bejelentkezés után felajánlja a jelszó mentését, a bejelentkezési mezőre kattintva kitölti a mentett fiókot (kétlépéses belépésnél is); a jelszavakat az operációs rendszer titkosítja, CSV-importálás és -exportálás (Chrome, Edge, Brave, Firefox, Bitwarden…).
 - **Kezelés** – könyvjelzők mappákkal és importálással (Chrome, Edge, Brave, Vivaldi, Opera, HTML), előzmények, letöltéskezelő, webhelyengedélyek, HTTP-bejelentkezés, testreszabható új lap.
 - **Kétnyelvű** – a teljes felület magyarul és angolul.
 - **Automatikus frissítés** a GitHub Releasesből.
@@ -75,7 +76,7 @@ Tesztprofil használata (a valódi adataidat nem érinti): `IMP_PROFILE=./teszt-
 ```
 src/main/      fő folyamat: ablakok, lapok, Shields, előzmények (SQLite), letöltések, frissítés
 src/ui/        a böngésző kezelőfelülete (lapsáv, címsor) és a felugró panelek
-src/pages/     belső imp:// oldalak: új lap, beállítások, előzmények, könyvjelzők, letöltések, feladatkezelő, olvasó
+src/pages/     belső imp:// oldalak: új lap, beállítások, előzmények, könyvjelzők, jelszavak, letöltések, feladatkezelő, olvasó
 src/shared/    fordítások (magyar/angol), ikonok, keresőmotorok
 build/         telepítő-ikonok és NSIS-beállítások
 site/          a letöltő weboldal (GitHub Pages)

@@ -586,3 +586,84 @@ body {
 .bubble.toast button:hover {
   background: var(--hover);
 }
+
+/* saved passwords under a login field */
+.pwfill .sug .pw-user {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13.5px;
+  font-weight: 550;
+}
+
+.pwfill .sug .pw-dots {
+  flex: 1 0 auto;
+  color: var(--text-2);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.pwfill .sug .pw-host {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.pw-foot {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.pw-manage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+}
+
+.pw-manage:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+/* save password prompt */
+.pwsave .head .icon-btn {
+  margin: -4px -6px -4px 0;
+}
+
+.pw-site {
+  padding-top: 0;
+  padding-bottom: 6px;
+}
+
+.pw-field {
+  position: relative;
+  display: grid;
+}
+
+.pw-field input {
+  padding-right: 38px;
+}
+
+.pw-field .icon-btn {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+}
