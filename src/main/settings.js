@@ -32,7 +32,7 @@ const DEFAULTS = {
   shields: {
     adblock: 'standard', // off | standard | aggressive
     https: 'upgrade', // off | upgrade | strict
-    thirdPartyCookies: true,
+    thirdPartyCookies: false,
     gpc: true,
     allowlist: [],
   },
@@ -40,6 +40,7 @@ const DEFAULTS = {
     dns: 'automatic', // off | automatic | cloudflare | quad9 | google | custom
     dnsCustom: '',
     saveHistory: true,
+    passkeys: false,
     clearOnExit: false,
   },
   performance: {

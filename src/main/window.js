@@ -250,17 +250,15 @@ class BrowserWin {
     return i;
   }
 
-  createTab({ url, active = true, index, pinned, sleeping, entries, entryIndex, title, favicon, openerId, adopt, typed } = {}) {
+  createTab({ url, active = true, index, pinned, sleeping, entries, entryIndex, title, favicon, openerId, typed, loadOptions } = {}) {
     const tab = new Tab(this, { url: url || Tab.NEW_TAB, pinned, entries, entryIndex, title, favicon, openerId });
     tab.typed = !!typed;
     if (sleeping) {
       tab.sleeping = true;
     } else {
-      tab.createView(adopt);
-      if (!adopt || !adopt.webContents) {
-        if (entries && entries.length) tab.restoreOrLoad();
-        else tab.wc.loadURL(tab.url).catch(() => {});
-      }
+      tab.createView();
+      if (entries && entries.length) tab.restoreOrLoad();
+      else tab.wc.loadURL(tab.url, loadOptions).catch(() => {});
     }
     const pins = this.pinnedCount();
     let i = index ?? this.tabs.length;
@@ -287,6 +285,40 @@ class BrowserWin {
     }
     const target = this.tabs[Math.min(Math.max(activeIndex || 0, 0), this.tabs.length - 1)];
     this.activate(target.id);
+  }
+
+  // window.open() and target=_blank links. Sized popups (typically sign-in
+  // windows that report back to their opener) stay real popup windows;
+  // everything else opens as a tab next to the page that opened it.
+  handleWindowOpen(opener, details) {
+    const { url, disposition, features } = details;
+    if (/^(javascript|file):/i.test(url)) return { action: 'deny' };
+    // The new page lives in the opener's session; it gets the same preferences as any tab.
+    const webPreferences = Tab.webPreferences();
+    if (disposition === 'new-window' && features) {
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: { autoHideMenuBar: true, icon: ICON, backgroundColor: '#ffffff', webPreferences },
+      };
+    }
+    // Links and tab-style window.open() calls become regular Imp tabs. (Electron
+    // can hand over a ready-made page instead, but that one would miss the tab
+    // preferences above — preload, passkey setting — and break Google sign-in.)
+    const post = details.postBody;
+    this.createTab({
+      url,
+      active: disposition !== 'background-tab',
+      index: this.indexAfterOpener(opener),
+      openerId: opener.id,
+      loadOptions: {
+        httpReferrer: details.referrer,
+        ...(post && {
+          postData: post.data,
+          extraHeaders: `content-type: ${post.contentType}${post.boundary ? `; boundary=${post.boundary}` : ''}`,
+        }),
+      },
+    });
+    return { action: 'deny' };
   }
 
   activate(id) {

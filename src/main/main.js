@@ -166,6 +166,11 @@ function start() {
       manager.createWindow({ url: urls.shift() });
       urls.forEach((u) => manager.openUrl(u));
     }
+    // Since 1.0.1 third-party cookies are allowed by default (they broke sign-ins);
+    // move existing 1.0.0 installs to the new default once.
+    if (settings.get('meta.lastVersion') === '1.0.0' && app.getVersion() !== '1.0.0') {
+      settings.set('shields.thirdPartyCookies', false);
+    }
     settings.set('meta.lastVersion', app.getVersion());
     ready = true;
     updater.init(manager);

@@ -175,6 +175,7 @@
             'set.dns.desc',
           )}
           ${get('privacy.dns') === 'custom' ? `<div class="item">${textBlock('set.dns.customUrl')}<input class="input wide" id="dns-custom" placeholder="https://dns.example/dns-query" value="${esc(get('privacy.dnsCustom'))}" spellcheck="false"></div>` : ''}
+          ${sw('privacy.passkeys', 'set.passkeys', 'set.passkeys.desc')}
           ${sw('privacy.saveHistory', 'set.saveHistory', 'set.saveHistory.desc')}
           ${sw('privacy.clearOnExit', 'set.clearOnExit', 'set.clearOnExit.desc')}
           <div class="item">${textBlock('set.clear.title', 'set.clear.desc')}<button class="btn" id="open-clear">${icon('trash', 15)}${esc(t('set.clear.open'))}</button></div>

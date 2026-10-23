@@ -9,6 +9,7 @@ const shields = require('./shields');
 const history = require('./history');
 const omnibox = require('./omnibox');
 const menus = require('./menus');
+const compat = require('./compat');
 const Tab = require('./tab');
 const { t } = require('./i18n');
 
@@ -220,6 +221,11 @@ function overlayAction(w, action, p = {}) {
 function init(windowManager, net) {
   manager = windowManager;
   netSession = net;
+
+  // Asked synchronously by the tab preload on Google's sign-in pages.
+  ipcMain.on('imp:compat-ua', (event) => {
+    event.returnValue = compat.firefoxUA();
+  });
 
   on('ui:ready', (w) => w.onUiReady());
   on('overlay:ready', (w) => w.onOverlayReady());

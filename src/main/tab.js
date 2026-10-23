@@ -64,20 +64,8 @@ class Tab {
 
   // ---- lifecycle ---------------------------------------------------------------
 
-  createView(adopt) {
-    const webPreferences = {
-      preload: PAGE_PRELOAD,
-      session: this.win.session,
-      sandbox: true,
-      contextIsolation: true,
-      nodeIntegration: false,
-      plugins: true,
-      spellcheck: true,
-      safeDialogs: true,
-      backgroundThrottling: true,
-      scrollBounce: true,
-    };
-    this.view = adopt ? new WebContentsView({ webContents: adopt.webContents, webPreferences }) : new WebContentsView({ webPreferences });
+  createView() {
+    this.view = new WebContentsView({ webPreferences: { ...Tab.webPreferences(), session: this.win.session } });
     this.view.setBackgroundColor(this.url.startsWith('imp:') ? this.win.pageBackground() : '#FFFFFF');
     this.attachEvents(this.view.webContents);
     if (this.muted) this.view.webContents.setAudioMuted(true);
@@ -472,6 +460,22 @@ class Tab {
     this.changed();
   }
 }
+
+// Preferences for every web page Imp shows: tabs, and pages they open.
+Tab.webPreferences = () => ({
+  preload: PAGE_PRELOAD,
+  sandbox: true,
+  contextIsolation: true,
+  nodeIntegration: false,
+  plugins: true,
+  spellcheck: true,
+  safeDialogs: true,
+  backgroundThrottling: true,
+  scrollBounce: true,
+  // Passkeys / security keys stay off unless enabled in settings: sites then
+  // sign in with a password and Windows never shows the security-key dialog.
+  ...(settings.get('privacy.passkeys') ? {} : { disableBlinkFeatures: 'WebAuth' }),
+});
 
 Tab.NEW_TAB = NEW_TAB;
 module.exports = Tab;

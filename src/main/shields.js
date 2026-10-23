@@ -7,6 +7,7 @@ const { ipcMain, webContents } = require('electron');
 const { ElectronBlocker, Request } = require('@ghostery/adblocker-electron');
 const { parse: parseHost, getDomain } = require('tldts');
 const settings = require('./settings');
+const compat = require('./compat');
 const { JsonFile, dataPath } = require('./store');
 
 const PRELOAD_PATH = require.resolve('@ghostery/adblocker-electron-preload');
@@ -172,8 +173,11 @@ function onBeforeRequest(details, callback) {
 function onBeforeSendHeaders(details, callback) {
   const headers = details.requestHeaders;
   if (settings.get('shields.gpc')) headers['Sec-GPC'] = '1';
+  const topUrl = details.resourceType === 'mainFrame' ? details.url : topUrlFor(details);
+  if (compat.isGoogleAuthHost(hostOf(details.url)) || compat.isGoogleAuthHost(hostOf(topUrl))) {
+    compat.applyGoogleAuthHeaders(headers);
+  }
   if (settings.get('shields.thirdPartyCookies') && details.resourceType !== 'mainFrame') {
-    const topUrl = topUrlFor(details);
     if (isThirdParty(details.url, topUrl) && !isAllowlisted(hostOf(topUrl))) {
       for (const k of Object.keys(headers)) if (k.toLowerCase() === 'cookie') delete headers[k];
     }
