@@ -33,10 +33,10 @@ class Downloads extends EventEmitter {
   }
 
   setupSession(ses, isPrivate) {
-    ses.on('will-download', (event, item) => this.handle(item, isPrivate));
+    ses.on('will-download', (event, item, webContents) => this.handle(item, isPrivate, webContents));
   }
 
-  handle(item, isPrivate) {
+  handle(item, isPrivate, webContents) {
     const id = `${Date.now().toString(36)}${(this.counter++).toString(36)}`;
     const dir = this.dir();
     if (settings.get('downloads.ask')) {
@@ -96,7 +96,7 @@ class Downloads extends EventEmitter {
       this.emitNow();
     });
 
-    this.emit('started', info);
+    this.emit('started', info, { webContents, userGesture: item.hasUserGesture() });
     this.emitNow();
   }
 

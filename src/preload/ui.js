@@ -2,7 +2,7 @@
 // Bridge for the browser chrome (toolbar, tabs) and the popup overlay.
 const { contextBridge, ipcRenderer } = require('electron');
 
-const ALLOWED = /^(ui|tab|nav|omnibox|popup|overlay|bubble|find|perm|bookmark|split|palette):/;
+const ALLOWED = /^(ui|tab|nav|omnibox|popup|overlay|bubble|find|perm|bookmark|download|split|palette):/;
 
 contextBridge.exposeInMainWorld('imp', {
   send(channel, ...args) {

@@ -238,6 +238,23 @@ function overlayAction(w, action, p = {}) {
   }
 }
 
+// A tab that only served to start a download is closed once the download is
+// under way: a new tab whose link turned out to be a file (as Chrome does), or a
+// "your download will start shortly" page opened from another tab that started
+// the download by itself. A page where you clicked the download link stays.
+function closeDownloadTab(tab, userGesture) {
+  const w = tab.win;
+  const wc = tab.wc;
+  if (!wc || w.tabs.length < 2) return;
+  const history = wc.navigationHistory;
+  const blank = history.length() === 0 || (history.length() === 1 && /^(about:blank)?$/.test(wc.getURL()));
+  const fromOtherTab = tab.openerId != null && !!w.getTab(tab.openerId);
+  if (!blank && !(fromOtherTab && !userGesture)) return;
+  setTimeout(() => {
+    if (w.getTab(tab.id)) w.closeTab(tab.id, { remember: false });
+  }, 300);
+}
+
 function init(windowManager, net) {
   manager = windowManager;
   netSession = net;
@@ -371,9 +388,11 @@ function init(windowManager, net) {
     }
     manager.notifyPages('downloads');
   });
-  downloads.on('started', (info) => {
-    const w = manager.focused();
+  downloads.on('started', (info, source) => {
+    const tab = source?.webContents && manager.findTab(source.webContents);
+    const w = tab?.win || manager.focused();
     if (w) w.send('ui:download-started', { id: info.id });
+    if (tab) closeDownloadTab(tab, source.userGesture);
   });
 }
 
