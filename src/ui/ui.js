@@ -82,6 +82,7 @@
     });
     $('#url').placeholder = t(isPrivate ? 'omnibox.placeholderPrivate' : 'omnibox.placeholder');
     $('#new-tab-v .label').textContent = t('tip.newTab');
+    $('#shelf-all').textContent = t('dl.showAll');
     $('#private-pill').innerHTML = `${icon('incognito', 15)}<span>${esc(t('private'))}</span>`;
     $('#private-pill').hidden = !isPrivate;
     $('#find-input').placeholder = t('find.placeholder');
@@ -763,6 +764,16 @@
       const btn = document.createElement('button');
       btn.className = 'bm';
       btn.dataset.id = b.id;
+      btn.draggable = true;
+      btn.addEventListener('dragstart', (e) => {
+        e.dataTransfer.effectAllowed = 'copyMove';
+        e.dataTransfer.setData(BM_TYPE, String(b.id));
+        if (b.url) {
+          e.dataTransfer.setData('text/uri-list', b.url);
+          e.dataTransfer.setData('text/plain', b.url);
+        }
+      });
+      btn.addEventListener('dragend', clearBookmarkDrop);
       btn.title = b.type === 'folder' ? b.title : `${b.title}\n${b.url}`;
       btn.innerHTML = `${bookmarkIcon(b)}<span>${esc(b.title || b.url)}</span>`;
       btn.querySelector('img')?.addEventListener('error', (ev) => ev.target.replaceWith(document.createRange().createContextualFragment(icon('globe', 16))));
@@ -805,6 +816,79 @@
     bar.appendChild(more);
     const limit = bar.clientWidth - 40;
     for (const b of buttons) b.hidden = b.offsetLeft + b.offsetWidth > limit;
+  }
+
+  // ---- drag and drop: reorder the bar, drop into folders, or drop a link to add it
+  const BM_TYPE = 'application/x-imp-bookmark';
+
+  function clearBookmarkDrop() {
+    $('#bookmarks-bar').querySelectorAll('.drop-before, .drop-after, .drop-into').forEach((el) => el.classList.remove('drop-before', 'drop-after', 'drop-into'));
+  }
+
+  // Where a drop at the pointer goes: into a folder (the middle of its button,
+  // or » for Other bookmarks), or onto the bar before an item / at the end.
+  function bookmarkDropTarget(e) {
+    const bar = $('#bookmarks-bar');
+    if (e.target.closest?.('.bm-overflow')) return { parent: 'other', before: null, el: bar.querySelector('.bm-overflow'), mark: 'drop-into' };
+    const all = [...bar.querySelectorAll('.bm')];
+    const shown = all.filter((el) => !el.hidden);
+    const firstHidden = all.find((el) => el.hidden);
+    for (const [i, el] of shown.entries()) {
+      const r = el.getBoundingClientRect();
+      if (e.clientX > r.right) continue;
+      const item = bookmarks.find((b) => b.id === Number(el.dataset.id));
+      if (item?.type === 'folder' && e.clientX > r.left + r.width / 4 && e.clientX < r.right - r.width / 4) {
+        return { parent: item.id, before: null, el, mark: 'drop-into' };
+      }
+      if (e.clientX < r.left + r.width / 2) return { parent: 'bar', before: item.id, el, mark: 'drop-before' };
+      const next = shown[i + 1] || firstHidden;
+      return { parent: 'bar', before: next ? Number(next.dataset.id) : null, el, mark: 'drop-after' };
+    }
+    const last = shown[shown.length - 1];
+    return { parent: 'bar', before: firstHidden ? Number(firstHidden.dataset.id) : null, el: last, mark: 'drop-after' };
+  }
+
+  function droppedLink(dt) {
+    const url = (dt.getData('text/uri-list') || '').split(/\r?\n/).find((l) => l && !l.startsWith('#'))?.trim() || dt.getData('text/plain').trim();
+    if (!/^https?:\/\/\S+$/i.test(url)) return null;
+    let title = '';
+    const html = dt.getData('text/html');
+    if (html) title = new DOMParser().parseFromString(html, 'text/html').body.textContent.trim();
+    if (!title) {
+      try {
+        title = new URL(url).hostname.replace(/^www\./, '');
+      } catch {}
+    }
+    return { url, title: title.slice(0, 200) };
+  }
+
+  {
+    const bar = $('#bookmarks-bar');
+    const accepts = (e) => !isPrivate && (e.dataTransfer.types.includes(BM_TYPE) || e.dataTransfer.types.includes('text/uri-list'));
+    bar.addEventListener('dragover', (e) => {
+      if (!accepts(e)) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = e.dataTransfer.types.includes(BM_TYPE) ? 'move' : 'copy';
+      const target = bookmarkDropTarget(e);
+      clearBookmarkDrop();
+      target.el?.classList.add(target.mark);
+    });
+    bar.addEventListener('dragleave', (e) => {
+      if (!bar.contains(e.relatedTarget)) clearBookmarkDrop();
+    });
+    bar.addEventListener('drop', (e) => {
+      if (!accepts(e)) return;
+      e.preventDefault();
+      const target = bookmarkDropTarget(e);
+      clearBookmarkDrop();
+      const id = Number(e.dataTransfer.getData(BM_TYPE));
+      if (id) {
+        if (target.parent !== id && target.before !== id) api.send('bookmark:move', id, target.parent, target.before);
+        return;
+      }
+      const link = droppedLink(e.dataTransfer);
+      if (link) api.send('bookmark:add', { ...link, parent: target.parent, before: target.before });
+    });
   }
 
   function updateBookmarksBarVisibility() {
@@ -977,11 +1061,89 @@
   // ------------------------------------------------------------------ downloads & update
   function renderDownloads() {
     const btn = $('#btn-downloads');
-    if (downloads.hasDownloads) btn.hidden = false;
+    // With the download bar on, downloads show there instead of behind a button.
+    btn.hidden = !downloads.hasDownloads || shelfEnabled();
     btn.classList.toggle('active', downloads.count > 0);
     btn.classList.toggle('indeterminate', downloads.count > 0 && downloads.fraction < 0);
     btn.style.setProperty('--p', String(Math.max(0, downloads.fraction)));
   }
+
+  // ---- download bar at the bottom of the window (as in classic Chrome)
+  const shelf = $('#download-shelf');
+  let shelfIds = []; // downloads on the bar, newest first
+  const shelfEnabled = () => settings?.downloads?.shelf !== false;
+  $('#shelf-close').innerHTML = icon('close', 15);
+  $('#shelf-close').addEventListener('click', closeShelf);
+  $('#shelf-all').addEventListener('click', () => api.send('ui:command', 'open-downloads'));
+
+  function fmtBytes(n) {
+    if (!n || n < 0) return '0 B';
+    const u = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.min(u.length - 1, Math.floor(Math.log(n) / Math.log(1024)));
+    return `${(n / 1024 ** i).toFixed(i ? 1 : 0).replace('.', lang === 'hu' ? ',' : '.')} ${u[i]}`;
+  }
+
+  function fmtLeft(seconds) {
+    const s = Math.max(1, Math.round(seconds));
+    const time = s < 60 ? `${s} ${t('unit.sec')}` : s < 3600 ? `${Math.round(s / 60)} ${t('unit.min')}` : `${Math.round(s / 3600)} ${t('unit.hour')}`;
+    return t('dl.left', { time });
+  }
+
+  function shelfStatus(d) {
+    if (d.state === 'progressing') {
+      if (d.paused) return t('dl.paused');
+      let text = d.total ? `${fmtBytes(d.received)}/${fmtBytes(d.total)}` : fmtBytes(d.received);
+      if (d.total && d.speed > 0) text += `, ${fmtLeft((d.total - d.received) / d.speed)}`;
+      return text;
+    }
+    if (d.state === 'completed') return d.exists === false ? t('dl.deleted') : fmtBytes(d.received || d.total);
+    return t(d.state === 'cancelled' ? 'dl.cancelled' : 'dl.failed');
+  }
+
+  function renderShelf() {
+    if (shelf.hidden) return;
+    const byId = new Map((downloads.items || []).map((d) => [d.id, d]));
+    const list = shelfIds.map((id) => byId.get(id)).filter(Boolean);
+    shelf.querySelector('.shelf-items').innerHTML = list
+      .map((d) => {
+        const ext = (d.filename.includes('.') ? d.filename.split('.').pop() : '').slice(0, 4);
+        const p = d.state === 'progressing' && d.total ? d.received / d.total : -1;
+        const cls = d.exists === false || d.state === 'cancelled' || d.state === 'interrupted' ? 'gone' : '';
+        return `<div class="shelf-item ${cls}" data-id="${esc(d.id)}" data-state="${esc(d.state)}" title="${esc(d.filename)}">
+          <div class="shelf-icon ${p < 0 && d.state === 'progressing' ? 'indeterminate' : ''}" style="--p:${Math.max(0, p)}"><span>${ext ? esc(ext) : icon('file', 14)}</span></div>
+          <div class="shelf-meta"><div class="shelf-name">${esc(d.filename)}</div><div class="shelf-sub">${esc(shelfStatus(d))}</div></div>
+          <button class="icon-btn small shelf-more" title="${esc(t('dl.options'))}">${icon('chevronUp', 14)}</button></div>`;
+      })
+      .join('');
+  }
+
+  function showShelf(id) {
+    shelfIds = [id, ...shelfIds.filter((x) => x !== id)].slice(0, 12);
+    if (shelf.hidden) {
+      shelf.hidden = false;
+      reportBounds();
+    }
+    renderShelf();
+  }
+
+  function closeShelf() {
+    shelf.hidden = true;
+    shelfIds = [];
+    reportBounds();
+  }
+
+  shelf.querySelector('.shelf-items').addEventListener('click', (e) => {
+    const el = e.target.closest('.shelf-item');
+    if (!el) return;
+    if (e.target.closest('.shelf-more')) return api.send('download:menu', el.dataset.id);
+    if (el.dataset.state === 'completed' && !el.classList.contains('gone')) api.send('download:op', 'open', el.dataset.id);
+  });
+  shelf.querySelector('.shelf-items').addEventListener('contextmenu', (e) => {
+    const el = e.target.closest('.shelf-item');
+    if (!el) return;
+    e.preventDefault();
+    api.send('download:menu', el.dataset.id);
+  });
 
   function renderUpdate() {
     $('#btn-menu .dot').hidden = update?.state !== 'ready';
@@ -1017,6 +1179,8 @@
   api.on('state:settings', (s) => {
     settings = s;
     applySettings();
+    renderDownloads();
+    if (!shelfEnabled() && !shelf.hidden) closeShelf();
   });
   api.on('state:lang', (l) => {
     lang = l;
@@ -1029,6 +1193,7 @@
   });
   api.on('state:downloads', (d) => {
     downloads = d;
+    renderShelf();
     renderDownloads();
   });
   api.on('state:update', (u) => {
@@ -1096,9 +1261,10 @@
     attention.add(tabId);
     render();
   });
-  api.on('ui:download-started', () => {
+  api.on('ui:download-started', (info) => {
     downloads.hasDownloads = true;
     renderDownloads();
+    if (shelfEnabled() && info?.id) return showShelf(info.id);
     const btn = $('#btn-downloads');
     btn.classList.remove('bump');
     void btn.offsetWidth;

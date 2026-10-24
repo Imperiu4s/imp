@@ -54,6 +54,7 @@ const DEFAULTS = {
   downloads: {
     dir: '',
     ask: false,
+    shelf: true, // download bar at the bottom of the window
   },
   passwords: {
     offer: true, // offer to save passwords after signing in

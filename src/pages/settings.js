@@ -259,6 +259,7 @@
             ${get('downloads.dir') ? `<button class="btn small" id="dl-reset">${esc(t('set.dl.reset'))}</button>` : ''}
             <button class="btn small" id="dl-change">${esc(t('set.dl.change'))}</button></div>
           ${sw('downloads.ask', 'set.dl.ask')}
+          ${sw('downloads.shelf', 'set.dl.shelf', 'set.dl.shelf.desc')}
         </div>`,
       ),
 

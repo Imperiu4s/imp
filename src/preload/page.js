@@ -1,7 +1,7 @@
 'use strict';
 // Runs in every tab. Only Imp's own imp:// pages get the privileged bridge;
 // ordinary websites see nothing.
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webFrame } = require('electron');
 
 if (location.protocol === 'imp:') {
   contextBridge.exposeInMainWorld('imp', {
@@ -319,4 +319,14 @@ if (/^https?:$/.test(location.protocol)) {
       }
     },
   });
+}
+
+// Ad blocking inside the page: the filter lists' scriptlets for this site (for
+// example against YouTube's video ads), run in the page's own world before any
+// of its scripts. See scriptletsFor() in src/main/shields.js.
+if (/^https?:$/.test(location.protocol)) {
+  try {
+    const code = ipcRenderer.sendSync('imp:scriptlets');
+    if (code) webFrame.executeJavaScript(code);
+  } catch {}
 }

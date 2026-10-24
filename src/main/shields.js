@@ -68,6 +68,7 @@ function preloadEngine() {
     const buf = fs.readFileSync(file);
     engineAge = Date.now() - fs.statSync(file).mtimeMs;
     engine = lib().ElectronBlocker.deserialize(new Uint8Array(buf));
+    scriptletCache.clear();
     engineMode = mode;
     trace.mark('ad-block engine loaded from cache');
   } catch {
@@ -80,6 +81,7 @@ async function loadEngine() {
   clearTimeout(retryTimer);
   if (mode === 'off') {
     engine = null;
+    scriptletCache.clear();
     engineMode = null;
     return;
   }
@@ -93,6 +95,7 @@ async function loadEngine() {
         : await lib().ElectronBlocker.fromPrebuiltAdsAndTracking(fetchImpl);
     if (settings.get('shields.adblock') !== mode) return;
     engine = fresh;
+    scriptletCache.clear();
     engineMode = mode;
     engineAge = 0;
     fs.writeFileSync(dataPath(`shields-${mode}.bin`), Buffer.from(fresh.serialize()));
@@ -249,15 +252,78 @@ function onHeadersReceived(details, callback) {
   callback(changed ? { responseHeaders: headers } : {});
 }
 
+// ---- in-page blocking ------------------------------------------------------------
+
+// Scriptlets: small scripts from the filter lists that defuse ads from inside the
+// page (YouTube's video ads, for one). The page preload asks for them
+// synchronously and runs them before any of the page's own scripts. Each one
+// gets a scope of its own: run side by side in the global scope, as the
+// library does, their helper functions overwrite each other and recurse forever
+// (which broke YouTube's blocking).
+const SCRIPTLET_GUARD = "if (typeof scriptletGlobals === 'undefined') { var scriptletGlobals = {}; };";
+const scriptletCache = new Map(); // hostname -> code, for the current engine
+// Scriptlets left out because, together with the others, they stop videos from
+// playing: YouTube's "serverContract" rewrite (on YouTube's own pages ads stay
+// blocked without it).
+const SCRIPTLET_SKIP = [/serverContract/];
+
+function scriptletsFor(url) {
+  if (!engine || !/^https?:/.test(url)) return '';
+  const parsed = parseHost(url);
+  const hostname = parsed.hostname || '';
+  if (!hostname || isAllowlisted(hostname)) return '';
+  if (scriptletCache.has(hostname)) return scriptletCache.get(hostname);
+  const { active, scripts } = engine.getCosmeticsFilters({
+    domain: parsed.domain || '',
+    hostname,
+    url,
+    getBaseRules: false,
+    getInjectionRules: true,
+    getExtendedRules: false,
+    getRulesFromHostname: true,
+    getRulesFromDOM: false,
+  });
+  let code = '';
+  if (active !== false && scripts.length) {
+    const wrapped = scripts.filter((s) => !SCRIPTLET_SKIP.some((re) => re.test(s))).map((s) => `try { (() => { ${s.startsWith(SCRIPTLET_GUARD) ? s.slice(SCRIPTLET_GUARD.length) : s}\n})(); } catch (e) {}`);
+    code = `(() => {\nconst scriptletGlobals = {};\n${wrapped.join('\n')}\n})();`;
+  }
+  if (scriptletCache.size > 300) scriptletCache.clear();
+  scriptletCache.set(hostname, code);
+  return code;
+}
+
+// Element hiding (CSS), as the library does it, minus the scriptlets (above).
+function injectCosmetics(event, url, msg) {
+  if (!engine || isAllowlisted(hostOf(event.sender.getURL()))) return;
+  const parsed = parseHost(url);
+  const first = msg === undefined;
+  const { active, styles } = engine.getCosmeticsFilters({
+    domain: parsed.domain || '',
+    hostname: parsed.hostname || '',
+    url,
+    classes: msg?.classes,
+    hrefs: msg?.hrefs,
+    ids: msg?.ids,
+    getBaseRules: first,
+    getInjectionRules: false,
+    getExtendedRules: false,
+    getRulesFromHostname: first,
+    getRulesFromDOM: !first,
+    callerContext: { frameId: event.frameId, processId: event.processId, lifecycle: msg?.lifecycle },
+  });
+  if (active !== false && styles.length) event.sender.insertCSS(styles, { cssOrigin: 'user' });
+}
+
 // ---- public API ---------------------------------------------------------------
 
 function init(net, blockedCallback) {
   netSession = net;
   onBlocked = blockedCallback;
-  ipcMain.handle('@ghostery/adblocker/inject-cosmetic-filters', (event, url, msg) => {
-    if (!engine) return;
-    if (isAllowlisted(hostOf(event.sender.getURL()))) return;
-    return engine.onInjectCosmeticFilters(event, url, msg);
+  ipcMain.handle('@ghostery/adblocker/inject-cosmetic-filters', injectCosmetics);
+  ipcMain.on('imp:scriptlets', (event) => {
+    const frame = event.senderFrame;
+    event.returnValue = frame && frame === event.sender.mainFrame ? scriptletsFor(frame.url) : '';
   });
   ipcMain.handle('@ghostery/adblocker/is-mutation-observer-enabled', () => !!engine?.config.enableMutationObserver);
   settings.on('change', (key) => {

@@ -338,6 +338,22 @@ function init(windowManager, net) {
   on('find:stop', (w) => w.stopFind());
   on('perm:respond', (w, tabId, allow) => w.respondPermission(tabId, allow));
   on('bookmark:menu', (w, id) => menus.bookmark(w, id));
+  on('download:menu', (w, id) => menus.download(w, String(id)));
+  on('download:op', (w, op, id) => {
+    if (op === 'open') downloads.open(String(id));
+  });
+  // Drag and drop on the bookmarks bar and in its folder lists.
+  const validParent = (p) => p === 'bar' || p === 'other' || bookmarks.find(Number(p))?.type === 'folder';
+  const parentOf = (p) => (p === 'bar' || p === 'other' ? p : Number(p));
+  on('bookmark:move', (w, id, parent, beforeId) => {
+    if (!bookmarks.find(Number(id)) || !validParent(parent)) return;
+    bookmarks.move(Number(id), parentOf(parent), beforeId == null ? null : Number(beforeId));
+  });
+  on('bookmark:add', (w, item) => {
+    if (w.isPrivate || !item || !/^https?:\/\//i.test(item.url || '') || !validParent(item.parent)) return;
+    const added = bookmarks.add({ title: String(item.title || item.url).slice(0, 500), url: String(item.url), parent: parentOf(item.parent) });
+    if (item.before != null) bookmarks.move(added.id, parentOf(item.parent), Number(item.before));
+  });
   on('split:ratio', (w, ratio) => w.setSplitRatio(ratio));
 
   // keep UIs in sync
@@ -348,16 +364,16 @@ function init(windowManager, net) {
   });
   downloads.on('change', () => {
     const progress = downloads.progress();
-    manager.broadcast('state:downloads', { ...progress, hasDownloads: true });
+    manager.broadcast('state:downloads', { ...progress, hasDownloads: true, items: downloads.list().slice(0, 15) });
     for (const w of manager.windows) {
       if (!w.win.isDestroyed()) w.win.setProgressBar(progress.count ? (progress.fraction < 0 ? 2 : progress.fraction) : -1);
       if (w.popup?.type === 'downloads') w.updatePopup('downloads', popupData(w, 'downloads'));
     }
     manager.notifyPages('downloads');
   });
-  downloads.on('started', () => {
+  downloads.on('started', (info) => {
     const w = manager.focused();
-    if (w) w.send('ui:download-started', {});
+    if (w) w.send('ui:download-started', { id: info.id });
   });
 }
 

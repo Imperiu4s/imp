@@ -629,6 +629,21 @@ body:not(.vertical) .vertical-only {
   text-overflow: ellipsis;
 }
 
+/* drag and drop on the bookmarks bar */
+.bm.drop-before {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.bm.drop-after {
+  box-shadow: inset -2px 0 0 var(--accent);
+}
+
+.bm.drop-into,
+.bm-overflow.drop-into {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 .bm img,
 .bm .ic {
   width: 16px;
@@ -650,6 +665,125 @@ body:not(.vertical) .vertical-only {
 
 .bm-overflow {
   margin-left: auto;
+}
+
+/* ---------------------------------------------------------------- download bar */
+
+#download-shelf {
+  flex: none;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 0 10px;
+  background: var(--toolbar);
+  border-top: 1px solid var(--border);
+}
+
+.shelf-items {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.shelf-item {
+  flex: none;
+  width: 270px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px 0 8px;
+  border-radius: 9px;
+  cursor: default;
+}
+
+.shelf-item:hover {
+  background: var(--hover);
+}
+
+.shelf-item[data-state="completed"]:not(.gone) {
+  cursor: pointer;
+}
+
+.shelf-icon {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--field);
+}
+
+/* progress ring around the file type while downloading */
+.shelf-item[data-state="progressing"] .shelf-icon {
+  background: conic-gradient(var(--accent) calc(var(--p) * 360deg), var(--press) 0);
+}
+
+.shelf-icon.indeterminate {
+  background: conic-gradient(var(--accent) 0 25%, var(--press) 0) !important;
+  animation: spin 1s linear infinite;
+}
+
+.shelf-icon span {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--toolbar);
+  color: var(--text-2);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.shelf-icon.indeterminate span {
+  animation: spin 1s linear infinite reverse;
+}
+
+.shelf-item[data-state="completed"]:not(.gone) .shelf-icon span {
+  inset: 0;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.shelf-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.shelf-name,
+.shelf-sub {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shelf-name {
+  font-size: 12.5px;
+}
+
+.shelf-sub {
+  font-size: 11.5px;
+  color: var(--text-2);
+}
+
+.shelf-item.gone .shelf-name {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.shelf-all {
+  flex: none;
+}
+
+body.fullscreen #download-shelf {
+  display: none !important;
 }
 
 /* ---------------------------------------------------------------- info & find bars */

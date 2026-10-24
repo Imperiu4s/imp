@@ -667,3 +667,17 @@ body {
   top: 50%;
   transform: translateY(-50%);
 }
+
+/* drag and drop in bookmark folder lists */
+.bmfolder .row.drop-before {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.bmfolder .row.drop-after {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.bmfolder .row.drop-into {
+  background: var(--accent-soft);
+  color: var(--accent);
+}

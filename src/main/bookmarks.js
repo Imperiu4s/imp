@@ -52,7 +52,9 @@ class Bookmarks extends EventEmitter {
 
   move(id, parent, beforeId) {
     const idx = this.items.findIndex((i) => i.id === id);
-    if (idx < 0) return;
+    if (idx < 0 || beforeId === id) return;
+    // A folder can't go inside itself.
+    if (parent !== 'bar' && parent !== 'other' && this.isInside(parent, id)) return;
     const [item] = this.items.splice(idx, 1);
     item.parent = parent;
     const target = beforeId != null ? this.items.findIndex((i) => i.id === beforeId) : -1;

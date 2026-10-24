@@ -297,6 +297,13 @@
     'dl.cancel': 'Cancel',
     'dl.show': 'Show in folder',
     'dl.remove': 'Remove from list',
+    'dl.left': '{time} left',
+    'dl.showAll': 'Show all',
+    'dl.options': 'Options',
+    'tip.closeShelf': 'Close',
+    'unit.sec': 's',
+    'set.dl.shelf': 'Download bar at the bottom of the window',
+    'set.dl.shelf.desc': 'Downloads appear at the bottom of the window, as in classic Chrome. When off, the downloads button in the toolbar shows them.',
 
     // http auth
     'auth.title': 'Sign in',
@@ -946,6 +953,13 @@
     'dl.cancel': 'Megszakítás',
     'dl.show': 'Megjelenítés mappában',
     'dl.remove': 'Eltávolítás a listából',
+    'dl.left': '{time} van hátra',
+    'dl.showAll': 'Összes megjelenítése',
+    'dl.options': 'Lehetőségek',
+    'tip.closeShelf': 'Bezárás',
+    'unit.sec': 'mp',
+    'set.dl.shelf': 'Letöltési sáv az ablak alján',
+    'set.dl.shelf.desc': 'A letöltések az ablak alján jelennek meg, mint a régi Chrome-ban. Kikapcsolva az eszköztár letöltés gombja mutatja őket.',
 
     'auth.title': 'Bejelentkezés',
     'auth.desc': 'A(z) {host} felhasználónevet és jelszót kér',

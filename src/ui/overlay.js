@@ -8,6 +8,7 @@
   const isPrivate = params.get('private') === '1';
   const isMac = params.get('platform') === 'darwin';
   const PAD = 18; // transparent margin around popups for their shadow (see POPUP_PAD in main)
+  const BM_TYPE = 'application/x-imp-bookmark'; // a bookmark being dragged (also in ui.js)
   const MOD = isMac ? '⌘' : 'Ctrl';
 
   const popup = document.getElementById('popup');
@@ -334,7 +335,48 @@
             if (e.button === 1) action('bookmark-open', { id: Number(el.dataset.id), disposition: 'new-tab', background: true });
           });
         });
+        // Drag to reorder, or onto the middle of a folder to move into it.
+        popup.querySelectorAll('[data-id], [data-folder]').forEach((el) => {
+          el.draggable = true;
+          el.addEventListener('dragstart', (e) => {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData(BM_TYPE, el.dataset.id || el.dataset.folder);
+          });
+          el.addEventListener('dragend', clearDrop);
+        });
       };
+      const rowItem = (el) => bookmarks.find((b) => b.id === Number(el.dataset.id || el.dataset.folder));
+      const clearDrop = () => popup.querySelectorAll('.drop-before, .drop-after, .drop-into').forEach((el) => el.classList.remove('drop-before', 'drop-after', 'drop-into'));
+      const dropTarget = (e) => {
+        const el = e.target.closest?.('[data-id], [data-folder]');
+        const item = el && rowItem(el);
+        if (!item) return null;
+        const r = el.getBoundingClientRect();
+        const y = e.clientY - r.top;
+        if (item.type === 'folder' && y > r.height / 4 && y < (r.height * 3) / 4) return { el, mark: 'drop-into', parent: item.id, before: null };
+        if (y < r.height / 2) return { el, mark: 'drop-before', parent: item.parent, before: item.id };
+        const siblings = [...popup.querySelectorAll('[data-id], [data-folder]')].filter((x) => String(rowItem(x)?.parent) === String(item.parent));
+        const next = siblings[siblings.indexOf(el) + 1];
+        return { el, mark: 'drop-after', parent: item.parent, before: next ? rowItem(next).id : null };
+      };
+      popup.ondragover = (e) => {
+        if (!e.dataTransfer.types.includes(BM_TYPE)) return;
+        const target = dropTarget(e);
+        clearDrop();
+        if (!target) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        target.el.classList.add(target.mark);
+      };
+      popup.ondrop = (e) => {
+        const target = dropTarget(e);
+        clearDrop();
+        const id = Number(e.dataTransfer.getData(BM_TYPE));
+        if (!target || !id || target.parent === id || target.before === id) return;
+        e.preventDefault();
+        api.send('bookmark:move', id, target.parent, target.before);
+      };
+      current.redraw = draw;
       draw();
     },
 
@@ -611,6 +653,7 @@
     current = { id, type, data };
     popup.style.maxHeight = `${Math.max(120, (maxHeight || 600) - PAD * 2)}px`;
     popup.hidden = false;
+    popup.ondragover = popup.ondrop = null;
     (renderers[type] || (() => {}))(data || {});
     reportSize();
   }
@@ -672,6 +715,10 @@
   });
   api.on('state:bookmarks', (list) => {
     bookmarks = list;
+    if (current?.redraw) {
+      current.redraw();
+      reportSize();
+    }
   });
 
   api.send('overlay:ready');

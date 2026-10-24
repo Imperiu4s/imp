@@ -2,6 +2,7 @@
 // Native context menus for pages, tabs and bookmarks.
 const { Menu, clipboard } = require('electron');
 const bookmarks = require('./bookmarks');
+const downloads = require('./downloads');
 const omnibox = require('./omnibox');
 const { t } = require('./i18n');
 
@@ -211,4 +212,21 @@ function bookmark(win, id) {
   ]);
 }
 
-module.exports = { page, tab, bookmark };
+// The ^ button of an item on the download bar.
+function download(win, id) {
+  const d = downloads.find(id);
+  if (!d) return;
+  const running = d.state === 'progressing';
+  const done = d.state === 'completed' && (!d.path || require('node:fs').existsSync(d.path));
+  popup(win, [
+    done && { label: t('menu.open'), click: () => downloads.open(id) },
+    done && { label: t('dl.show'), click: () => downloads.show(id) },
+    running && { label: t(d.paused ? 'dl.resume' : 'dl.pause'), click: () => downloads.pause(id) },
+    running && { label: t('dl.cancel'), click: () => downloads.cancel(id) },
+    SEP,
+    !running && { label: t('dl.remove'), click: () => downloads.remove(id) },
+    { label: t('dl.all'), click: () => win.openInternal('downloads') },
+  ]);
+}
+
+module.exports = { page, tab, bookmark, download };
