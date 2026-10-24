@@ -48,7 +48,8 @@ const DEFAULTS = {
     sleepAfter: 10, // minutes
     efficiency: 'auto', // auto | on | off
     hardwareAcceleration: true,
-    preconnect: true,
+    preconnect: true, // also enables the loading predictor (predictor.js)
+    preloadNewTab: true,
   },
   downloads: {
     dir: '',

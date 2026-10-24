@@ -288,21 +288,34 @@
     bmfolder(data) {
       popup.className = 'popup bmfolder';
       popup.style.width = '300px';
-      const stack = [{ folder: data.folder, title: data.title }];
+      // The bar's » button opens the "more" view: what doesn't fit on the bar,
+      // then all of Other bookmarks. Folders open in place, with a back row.
+      const stack = [data.more ? { more: true, hidden: data.hidden || [] } : { folder: data.folder, title: data.title }];
+      const rows = (items) =>
+        items
+          .map((b) =>
+            b.type === 'folder'
+              ? `<button class="row" data-folder="${b.id}">${icon('folder', 16)}<span class="label">${esc(b.title)}</span>${icon('chevronRight', 14)}</button>`
+              : `<button class="row" data-id="${b.id}" title="${esc(b.url)}">${favicon(b.favicon)}<span class="label">${esc(b.title || b.url)}</span></button>`,
+          )
+          .join('');
+      const childrenOf = (folder) => bookmarks.filter((b) => String(b.parent) === String(folder));
+      const foldersFirst = (items) => [...items.filter((b) => b.type === 'folder'), ...items.filter((b) => b.type !== 'folder')];
+      const empty = `<div class="empty">${esc(t('bm.folderEmpty'))}</div>`;
       const draw = () => {
         const top = stack[stack.length - 1];
-        const items = bookmarks.filter((b) => String(b.parent) === String(top.folder));
-        const back = stack.length > 1 ? row({ icon: 'chevronLeft', label: top.title, attrs: 'data-back="1"' }) : '';
-        const list = items.length
-          ? items
-              .map((b) =>
-                b.type === 'folder'
-                  ? `<button class="row" data-folder="${b.id}">${icon('folder', 16)}<span class="label">${esc(b.title)}</span>${icon('chevronRight', 14)}</button>`
-                  : `<button class="row" data-id="${b.id}" title="${esc(b.url)}">${favicon(b.favicon)}<span class="label">${esc(b.title || b.url)}</span></button>`,
-              )
-              .join('')
-          : `<div class="empty">${esc(t('bm.folderEmpty'))}</div>`;
-        popup.innerHTML = `<div class="section">${back}${list}</div>`;
+        if (top.more) {
+          const hidden = top.hidden.map((id) => bookmarks.find((b) => b.id === id)).filter(Boolean);
+          const other = foldersFirst(childrenOf('other'));
+          const parts = [];
+          if (hidden.length) parts.push(`<div class="section">${rows(hidden)}</div>`);
+          if (other.length) parts.push(`<div class="section"><div class="group-title">${esc(t('bm.other'))}</div>${rows(other)}</div>`);
+          popup.innerHTML = parts.join('') || `<div class="section">${empty}</div>`;
+        } else {
+          const items = childrenOf(top.folder);
+          const back = stack.length > 1 ? row({ icon: 'chevronLeft', label: top.title, attrs: 'data-back="1"' }) : '';
+          popup.innerHTML = `<div class="section">${back}${items.length ? rows(items) : empty}</div>`;
+        }
         fixImages(popup);
         popup.querySelector('[data-back]')?.addEventListener('click', () => {
           stack.pop();

@@ -252,28 +252,71 @@ if (/^https?:$/.test(location.protocol)) {
   });
 }
 
-// Google sign-in compatibility (see src/main/compat.js): make the page's view
-// of the browser match the Firefox identity sent in the request headers.
-if (/^accounts\.(google\.[a-z.]+|youtube\.com)$/i.test(location.hostname)) {
-  const ua = ipcRenderer.sendSync('imp:compat-ua');
+// Chrome's window.chrome has app, csi and loadTimes; Electron's is an empty
+// object. Sign-in pages (Google's above all) take a "Chrome" without them for
+// an app with an embedded browser and refuse to sign in. Complete it, in the
+// page's own world, before any of its scripts run. See src/main/compat.js.
+if (/^https?:$/.test(location.protocol)) {
   contextBridge.executeInMainWorld({
-    func: (userAgent) => {
-      const define = (obj, prop, value) => {
-        try {
-          Object.defineProperty(obj, prop, { get: () => value, configurable: true });
-        } catch {}
+    func: () => {
+      const c = window.chrome;
+      if (!c || typeof c !== 'object' || 'app' in c) return;
+      // Functions that look like Chrome's own: no prototype, "[native code]" source.
+      const natives = new WeakMap();
+      const native = (name, impl) => {
+        const fn = { [name](...args) { return impl(...args); } }[name];
+        natives.set(fn, `function ${name}() { [native code] }`);
+        return fn;
       };
-      const nav = Navigator.prototype;
-      define(nav, 'userAgent', userAgent);
-      define(nav, 'appVersion', userAgent.slice('Mozilla/'.length));
-      define(nav, 'vendor', '');
-      define(nav, 'productSub', '20100101');
-      define(nav, 'oscpu', (userAgent.match(/\(([^)]*?); rv:/) || [])[1] || '');
-      define(nav, 'userAgentData', undefined);
-      try {
-        delete window.chrome;
-      } catch {}
+      const toString = Function.prototype.toString;
+      const patched = new Proxy(toString, {
+        apply: (target, self, args) => (natives.has(self) ? natives.get(self) : Reflect.apply(target, self, args)),
+      });
+      natives.set(patched, 'function toString() { [native code] }');
+      Object.defineProperty(Function.prototype, 'toString', { value: patched, writable: true, configurable: true, enumerable: false });
+
+      const timing = () => performance.timing;
+      const proto = () => performance.getEntriesByType('navigation')[0]?.nextHopProtocol || 'http/1.1';
+      const loadTimes = native('loadTimes', () => {
+        const t = timing();
+        const p = proto();
+        const spdy = /^(h2|h3|hq)/.test(p);
+        const paint = performance.getEntriesByName('first-paint')[0];
+        return {
+          requestTime: t.navigationStart / 1000,
+          startLoadTime: t.navigationStart / 1000,
+          commitLoadTime: t.responseStart / 1000,
+          finishDocumentLoadTime: t.domContentLoadedEventEnd / 1000,
+          finishLoadTime: t.loadEventEnd / 1000,
+          firstPaintTime: paint ? (t.navigationStart + paint.startTime) / 1000 : 0,
+          firstPaintAfterLoadTime: 0,
+          navigationType: 'Other',
+          wasFetchedViaSpdy: spdy,
+          wasNpnNegotiated: spdy,
+          npnNegotiatedProtocol: spdy ? p : 'unknown',
+          wasAlternateProtocolAvailable: false,
+          connectionInfo: p,
+        };
+      });
+      const csi = native('csi', () => {
+        const t = timing();
+        return { startE: t.navigationStart, onloadT: t.domContentLoadedEventEnd, pageT: performance.now(), tran: 15 };
+      });
+      const app = {
+        isInstalled: false,
+        getDetails: native('getDetails', () => null),
+        getIsInstalled: native('getIsInstalled', () => false),
+        installState: native('installState', (callback) => {
+          if (typeof callback !== 'function') throw new TypeError('Error in invocation of app.installState(function callback): No matching signature.');
+          setTimeout(() => callback('not_installed'));
+        }),
+        runningState: native('runningState', () => 'cannot_run'),
+        InstallState: { DISABLED: 'disabled', INSTALLED: 'installed', NOT_INSTALLED: 'not_installed' },
+        RunningState: { CANNOT_RUN: 'cannot_run', READY_TO_RUN: 'ready_to_run', RUNNING: 'running' },
+      };
+      for (const [key, value] of Object.entries({ loadTimes, csi, app })) {
+        Object.defineProperty(c, key, { value, writable: true, enumerable: true, configurable: true });
+      }
     },
-    args: [ua],
   });
 }

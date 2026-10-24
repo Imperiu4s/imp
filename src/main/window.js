@@ -1,5 +1,6 @@
 'use strict';
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { app, BrowserWindow, WebContentsView, nativeTheme, screen, clipboard, dialog, shell, nativeImage } = require('electron');
 const Tab = require('./tab');
@@ -18,6 +19,8 @@ const UI_PRELOAD = path.join(__dirname, '../preload/ui.js');
 const UI_HTML = path.join(__dirname, '../ui/index.html');
 const OVERLAY_HTML = path.join(__dirname, '../ui/overlay.html');
 const ICON = path.join(__dirname, '../ui/assets/icon.png');
+// Computers with less memory don't keep a new tab page loaded in advance.
+const SPARE_TAB_MIN_MEMORY = 3.5 * 1024 ** 3;
 const ZOOM_STEPS = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 5];
 
 const PALETTES = {
@@ -112,7 +115,7 @@ class BrowserWin {
     const p = this.palette();
     this.win.setBackgroundColor(p.frame);
     if (process.platform !== 'darwin') this.win.setTitleBarOverlay(this.titleBarOverlay());
-    for (const tab of this.tabs) {
+    for (const tab of this.spareTab ? [...this.tabs, this.spareTab] : this.tabs) {
       if (tab.view && tab.url.startsWith('imp:')) tab.view.setBackgroundColor(p.page);
     }
   }
@@ -162,6 +165,9 @@ class BrowserWin {
     });
     win.on('close', () => this.manager.onWindowClosing(this));
     win.on('closed', () => {
+      clearTimeout(this.spareTimer);
+      this.spareTab?.destroy();
+      this.spareTab = null;
       for (const tab of this.tabs) tab.destroy();
       this.tabs = [];
       if (this.overlay && !this.overlay.webContents.isDestroyed()) this.overlay.webContents.close();
@@ -215,6 +221,38 @@ class BrowserWin {
     this.send('state:init', this.initialState());
     this.sendTabs();
     setTimeout(this.reveal, 20);
+    this.scheduleSpareTab(4000);
+  }
+
+  // A new tab page loaded in advance (in the background, not shown), so a new
+  // tab opens instantly instead of starting a page from scratch. Replaced a
+  // moment after it is used.
+  scheduleSpareTab(delay = 800) {
+    clearTimeout(this.spareTimer);
+    this.spareTimer = setTimeout(() => this.prepareSpareTab(), delay);
+  }
+
+  prepareSpareTab() {
+    if (this.spareTab || this.win.isDestroyed()) return;
+    if (!settings.get('performance.preloadNewTab') || this.manager.efficiencyActive() || os.totalmem() < SPARE_TAB_MIN_MEMORY) return;
+    const tab = new Tab(this, { url: Tab.NEW_TAB });
+    tab.createView();
+    if (this.pageBounds) tab.view.setBounds(this.pageBounds);
+    tab.wc.loadURL(Tab.NEW_TAB).catch(() => {});
+    this.spareTab = tab;
+  }
+
+  takeSpareTab() {
+    const tab = this.spareTab;
+    if (tab?.wc?.isCrashed()) {
+      tab.destroy();
+      this.spareTab = null;
+      this.scheduleSpareTab();
+    }
+    if (!this.spareTab?.wc || tab.wc.isLoading()) return null;
+    this.spareTab = null;
+    this.scheduleSpareTab();
+    return tab;
   }
 
   tabChanged(tab) {
@@ -261,9 +299,14 @@ class BrowserWin {
   }
 
   createTab({ url, active = true, index, pinned, sleeping, entries, entryIndex, title, favicon, openerId, typed, loadOptions } = {}) {
-    const tab = new Tab(this, { url: url || Tab.NEW_TAB, pinned, entries, entryIndex, title, favicon, openerId });
+    const spare = (!url || url === Tab.NEW_TAB) && !sleeping && !entries?.length ? this.takeSpareTab() : null;
+    const tab = spare || new Tab(this, { url: url || Tab.NEW_TAB, pinned, entries, entryIndex, title, favicon, openerId });
     tab.typed = !!typed;
-    if (sleeping) {
+    if (spare) {
+      tab.pinned = !!pinned;
+      tab.openerId = openerId ?? null;
+      tab.lastActive = Date.now();
+    } else if (sleeping) {
       tab.sleeping = true;
     } else {
       tab.createView();

@@ -9,8 +9,8 @@ const shields = require('./shields');
 const history = require('./history');
 const omnibox = require('./omnibox');
 const menus = require('./menus');
-const compat = require('./compat');
 const autofill = require('./autofill');
+const predictor = require('./predictor');
 const Tab = require('./tab');
 const { t } = require('./i18n');
 
@@ -86,13 +86,13 @@ function popupData(w, type, extra = {}) {
       const offer = autofill.offerData(tab);
       return offer && { ...offer, auto: !!extra.auto };
     }
-    case 'bmfolder': {
-      const parent = extra.folder;
+    case 'bmfolder':
       return {
+        folder: extra.folder,
         title: extra.title || '',
-        items: bookmarks.list().filter((b) => b.parent === parent),
+        more: !!extra.more,
+        hidden: Array.isArray(extra.hidden) ? extra.hidden.map(Number) : [],
       };
-    }
     case 'siteinfo': {
       const origin = originOf(url);
       return {
@@ -250,11 +250,6 @@ function init(windowManager, net) {
     } catch {}
   });
 
-  // Asked synchronously by the tab preload on Google's sign-in pages.
-  ipcMain.on('imp:compat-ua', (event) => {
-    event.returnValue = compat.firefoxUA();
-  });
-
   on('ui:ready', (w) => w.onUiReady());
   on('overlay:ready', (w) => w.onOverlayReady());
   on('ui:bounds', (w, b) => {
@@ -310,6 +305,7 @@ function init(windowManager, net) {
     try {
       w.session.preconnect({ url, numSockets: 1 });
     } catch {}
+    predictor.prefetchDns(w.session, url, 3);
   });
 
   on('popup:open', (w, type, anchor, extra) => {

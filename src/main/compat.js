@@ -1,41 +1,54 @@
 'use strict';
-// Website compatibility fixes.
+// Website compatibility: making Imp look exactly like the Chromium browser it is.
 //
-// Google refuses sign-in ("This browser or app may not be secure") from
-// Chromium builds it doesn't recognise, treating them as apps with an embedded
-// browser. On Google's sign-in pages Imp therefore presents itself as Firefox,
-// a browser Google supports, so signing in works normally. Every other site
-// sees the regular Chromium identity.
+// Electron leaves out a few things every Chromium-based browser has. Sign-in
+// pages, Google's above all, treat a "Chrome" that lacks them as an app with
+// an embedded browser and refuse to sign in ("This browser or app may not be
+// secure"). The missing pieces:
+//  - the Sec-CH-UA client hints on page loads (Electron only sends them with
+//    subresource requests): added here, for https pages;
+//  - window.chrome.app / csi / loadTimes: added by the page preload;
+//  - FedCM, which Electron advertises but cannot carry out, so "Sign in with
+//    Google" buttons wait forever: switched off in main.js.
+// (Imp 1.0.1–1.0.3 posed as Firefox on Google's sign-in pages instead; Google
+// sees through that.)
 
-const GOOGLE_AUTH = /^accounts\.(google\.[a-z.]+|youtube\.com)$/i;
-const DAY = 24 * 60 * 60 * 1000;
+const PLATFORM = { win32: 'Windows', darwin: 'macOS' }[process.platform] || 'Linux';
 
-function isGoogleAuthHost(host) {
-  return GOOGLE_AUTH.test(host || '');
+// Chromium's brand list for this version, GREASE brand included
+// (components/embedder_support/user_agent_utils.cc). Only used until a real
+// subresource request shows the exact header Chromium sends.
+function computedHints() {
+  const seed = Number(process.versions.chrome.split('.')[0]);
+  const chars = [' ', '(', ':', '-', '.', '/', ')', ';', '=', '?', '_'];
+  const grease = `"Not${chars[seed % chars.length]}A${chars[(seed + 1) % chars.length]}Brand";v="${['8', '99', '24'][seed % 3]}"`;
+  const chromium = `"Chromium";v="${seed}"`;
+  return {
+    'sec-ch-ua': (seed % 2 ? [chromium, grease] : [grease, chromium]).join(', '),
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': `"${PLATFORM}"`,
+  };
 }
 
-// Firefox 136 shipped on 2025-03-04 and a new major version follows every four
-// weeks. Stay one version behind the estimate so we never claim a future release.
-function firefoxVersion(now = Date.now()) {
-  const sinceBase = now - Date.UTC(2025, 2, 4);
-  return 136 + Math.max(0, Math.floor(sinceBase / (28 * DAY)) - 1);
-}
+let hints = null;
+let observed = false;
 
-function firefoxUA() {
-  const v = firefoxVersion();
-  const platform = {
-    win32: 'Windows NT 10.0; Win64; x64',
-    darwin: 'Macintosh; Intel Mac OS X 10.15',
-  }[process.platform] || 'X11; Linux x86_64';
-  return `Mozilla/5.0 (${platform}; rv:${v}.0) Gecko/20100101 Firefox/${v}.0`;
-}
-
-// Rewrites request headers in place for requests made on Google's sign-in pages.
-function applyGoogleAuthHeaders(headers) {
-  for (const k of Object.keys(headers)) {
-    if (/^user-agent$/i.test(k) || /^sec-ch-ua/i.test(k)) delete headers[k];
+// Called for every request: page loads get the same client hints as the
+// requests Chromium sends itself.
+function addClientHints(details, headers) {
+  const names = Object.keys(headers);
+  const ua = names.find((k) => k.toLowerCase() === 'sec-ch-ua');
+  if (ua) {
+    if (!observed) {
+      observed = true;
+      const get = (n) => headers[names.find((k) => k.toLowerCase() === n)];
+      hints = { 'sec-ch-ua': headers[ua], 'sec-ch-ua-mobile': get('sec-ch-ua-mobile') || '?0', 'sec-ch-ua-platform': get('sec-ch-ua-platform') || `"${PLATFORM}"` };
+    }
+    return;
   }
-  headers['User-Agent'] = firefoxUA();
+  if ((details.resourceType === 'mainFrame' || details.resourceType === 'subFrame') && details.url.startsWith('https://')) {
+    Object.assign(headers, (hints ||= computedHints()));
+  }
 }
 
-module.exports = { isGoogleAuthHost, firefoxUA, applyGoogleAuthHeaders };
+module.exports = { addClientHints, computedHints };

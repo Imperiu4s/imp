@@ -12,6 +12,7 @@ const shields = require('./shields');
 const shortcuts = require('./shortcuts');
 const reader = require('./reader');
 const passwords = require('./passwords');
+const predictor = require('./predictor');
 const ENGINES = require('../shared/engines');
 
 const PAGES_DIR = path.join(__dirname, '../pages');
@@ -47,6 +48,18 @@ function safeJoin(base, rel) {
   return p.startsWith(base + path.sep) ? p : null;
 }
 
+// Imp's own pages never change while it runs: read each file from disk once.
+const fileCache = new Map();
+function readCached(file) {
+  let body = fileCache.get(file);
+  if (!body) {
+    body = fs.promises.readFile(file);
+    fileCache.set(file, body);
+    body.catch(() => fileCache.delete(file));
+  }
+  return body;
+}
+
 function registerProtocol(ses) {
   if (ses.protocol.isProtocolHandled('imp')) return;
   ses.protocol.handle('imp', async (request) => {
@@ -60,7 +73,7 @@ function registerProtocol(ses) {
     else file = safeJoin(PAGES_DIR, rel.slice(1));
     if (!file) return new Response('Not found', { status: 404 });
     try {
-      const body = await fs.promises.readFile(file);
+      const body = await readCached(file);
       return new Response(body, {
         headers: {
           'content-type': MIME[path.extname(file)] || 'application/octet-stream',
@@ -85,6 +98,7 @@ async function clearData({ range = 'all', history: h = true, cookies = false, ca
   const ses = manager.browsing;
   if (h) {
     history.clear(range);
+    predictor.clear();
     manager.closedTabs = [];
   }
   if (d) downloads.clear();

@@ -7,6 +7,7 @@ const { ipcMain, webContents } = require('electron');
 const { parse: parseHost, getDomain } = require('tldts');
 const settings = require('./settings');
 const compat = require('./compat');
+const predictor = require('./predictor');
 const trace = require('./trace');
 const { JsonFile, dataPath } = require('./store');
 
@@ -192,9 +193,8 @@ function onBeforeSendHeaders(details, callback) {
   const headers = details.requestHeaders;
   if (settings.get('shields.gpc')) headers['Sec-GPC'] = '1';
   const topUrl = details.resourceType === 'mainFrame' ? details.url : topUrlFor(details);
-  if (compat.isGoogleAuthHost(hostOf(details.url)) || compat.isGoogleAuthHost(hostOf(topUrl))) {
-    compat.applyGoogleAuthHeaders(headers);
-  }
+  compat.addClientHints(details, headers);
+  predictor.observe(details, topUrl);
   if (settings.get('shields.thirdPartyCookies') && details.resourceType !== 'mainFrame') {
     if (isThirdParty(details.url, topUrl) && !isAllowlisted(hostOf(topUrl))) {
       for (const k of Object.keys(headers)) if (k.toLowerCase() === 'cookie') delete headers[k];
@@ -209,6 +209,15 @@ function onHeadersReceived(details, callback) {
   const isFrame = details.resourceType === 'mainFrame' || details.resourceType === 'subFrame';
   const topUrl = details.resourceType === 'mainFrame' ? details.url : topUrlFor(details);
   const allowlisted = isAllowlisted(hostOf(topUrl));
+
+  if (details.resourceType === 'mainFrame' && details.statusCode >= 200 && details.statusCode < 300) {
+    const hints = predictor.linkHints(details);
+    if (hints.length) {
+      const key = Object.keys(headers).find((k) => k.toLowerCase() === 'link') || 'Link';
+      headers[key] = [...(headers[key] || []), ...hints];
+      changed = true;
+    }
+  }
 
   if (engine && isFrame && !allowlisted) {
     const csp = engine.getCSPDirectives(

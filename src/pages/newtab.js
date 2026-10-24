@@ -174,8 +174,11 @@
     applyLayout();
     load();
   });
+  // The page may have been loaded in advance (see prepareSpareTab): bring it up to date when shown.
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) load();
+    if (document.hidden) return;
+    tick();
+    load();
   });
 
   void settings;

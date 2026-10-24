@@ -27,6 +27,18 @@ settings.load();
 // ---- early, pre-ready tuning ------------------------------------------------------------
 if (!settings.get('performance.hardwareAcceleration')) app.disableHardwareAcceleration();
 
+// Chromium features: merged with any given on the command line (only the last
+// --enable-features / --disable-features switch counts).
+function addFeatures(which, list) {
+  const current = app.commandLine.getSwitchValue(which);
+  app.commandLine.appendSwitch(which, [current, ...list].filter(Boolean).join(','));
+}
+// FedCM: Electron advertises it but can't carry it out, so "Sign in with Google"
+// buttons on other sites would wait forever. Without it they open the usual pop-up.
+addFeatures('disable-features', ['FedCm']);
+// Download large files over several connections at once.
+addFeatures('enable-features', ['ParallelDownloading']);
+
 // Present ourselves exactly like a regular Chromium browser (reduced UA), so
 // websites don't serve degraded "unsupported browser" pages.
 {
@@ -111,13 +123,17 @@ function start() {
       google: ['https://dns.google/dns-query{?dns}'],
     };
     try {
-      if (mode === 'off') app.configureHostResolver({ secureDnsMode: 'off' });
-      else if (mode === 'automatic') app.configureHostResolver({ secureDnsMode: 'automatic' });
+      // The operating system's resolver (with its warm cache) for plain lookups:
+      // Chromium's own one first reads the whole DNS configuration, which held up
+      // the first page after startup by about a second. Secure DNS works either way.
+      const base = { enableBuiltInResolver: false };
+      if (mode === 'off') app.configureHostResolver({ ...base, secureDnsMode: 'off' });
+      else if (mode === 'automatic') app.configureHostResolver({ ...base, secureDnsMode: 'automatic' });
       else {
         const custom = settings.get('privacy.dnsCustom');
         const servers = mode === 'custom' ? (/^https:\/\//.test(custom) ? [custom] : []) : providers[mode];
-        if (servers && servers.length) app.configureHostResolver({ secureDnsMode: 'secure', secureDnsServers: servers });
-        else app.configureHostResolver({ secureDnsMode: 'automatic' });
+        if (servers && servers.length) app.configureHostResolver({ ...base, secureDnsMode: 'secure', secureDnsServers: servers });
+        else app.configureHostResolver({ ...base, secureDnsMode: 'automatic' });
       }
     } catch (err) {
       console.warn('[dns] configure failed', err.message);

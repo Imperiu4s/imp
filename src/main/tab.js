@@ -8,6 +8,7 @@ const shields = require('./shields');
 const settings = require('./settings');
 const errorPage = require('./error-page');
 const autofill = require('./autofill');
+const predictor = require('./predictor');
 const { JsonFile } = require('./store');
 const { t } = require('./i18n');
 const trace = require('./trace');
@@ -147,6 +148,7 @@ class Tab {
     this.win.detachView(this.view);
     const wc = this.view.webContents;
     shields.forget(wc.id);
+    predictor.forget(wc.id);
     if (!wc.isDestroyed()) wc.close();
     this.view = null;
   }
@@ -320,6 +322,8 @@ class Tab {
       const url = event.url ?? legacy[0];
       if (!isMainFrame || isSameDocument || !url) return;
       if (this.view) this.view.setBackgroundColor(url.startsWith('imp:') ? this.win.pageBackground() : '#FFFFFF');
+      // Connect to the servers this site will need while its page is still on the way.
+      predictor.navigationStarted(wc, url);
       // Deny permission prompts that belong to the page we are leaving.
       if (this.permissionRequests.length) {
         this.permissionRequests.forEach((r) => r.callback(false));
@@ -341,6 +345,7 @@ class Tab {
       this.url = url;
       this.errorUrl = null;
       this.crashed = false;
+      predictor.navigated(wc, url);
       this.blocked = 0;
       this.blockedHosts.clear();
       this.readerable = false;

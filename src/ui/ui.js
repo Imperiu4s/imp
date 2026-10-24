@@ -486,7 +486,7 @@
   const suggest = { open: false, zero: false, items: [], selected: 0, text: '', seq: 0, local: null, remote: [], completedUrl: null };
   let lastInputType = '';
   let selectOnUp = false;
-  let warmedUp = false;
+  let warmedUp = 0;
   const preconnected = new Set();
 
   function preconnect(url) {
@@ -516,9 +516,10 @@
       urlInput.value = fullUrl(activeTab());
       urlInput.select();
     }
-    // Open a connection to the search engine now, so the search starts instantly.
-    if (!warmedUp) {
-      warmedUp = true;
+    // Open a connection to the search engine now, so the search starts instantly
+    // (again after a while: idle connections get closed).
+    if (Date.now() - warmedUp > 60_000) {
+      warmedUp = Date.now();
       api.send('omnibox:warmup');
     }
   });
@@ -761,6 +762,7 @@
     for (const b of items) {
       const btn = document.createElement('button');
       btn.className = 'bm';
+      btn.dataset.id = b.id;
       btn.title = b.type === 'folder' ? b.title : `${b.title}\n${b.url}`;
       btn.innerHTML = `${bookmarkIcon(b)}<span>${esc(b.title || b.url)}</span>`;
       btn.querySelector('img')?.addEventListener('error', (ev) => ev.target.replaceWith(document.createRange().createContextualFragment(icon('globe', 16))));
@@ -782,17 +784,24 @@
     updateBookmarksBarVisibility();
   }
 
+  // The » button at the end of the bar lists what doesn't fit, plus everything in
+  // "Other bookmarks" (its folders first), so every folder is one click away.
   function fitBookmarks() {
     const bar = $('#bookmarks-bar');
     bar.querySelector('.bm-overflow')?.remove();
     const buttons = [...bar.querySelectorAll('.bm')];
     buttons.forEach((b) => (b.hidden = false));
-    if (bar.scrollWidth <= bar.clientWidth + 1) return;
+    const overflow = bar.scrollWidth > bar.clientWidth + 1;
+    const others = bookmarks.some((b) => b.parent === 'other');
+    if (!overflow && !others) return;
     const more = document.createElement('button');
     more.className = 'icon-btn small bm-overflow';
     more.innerHTML = icon('chevronsRight', 15);
-    more.title = t('bm.more');
-    more.addEventListener('click', () => togglePopup('bmfolder', more, 'right', { folder: 'bar', title: '' }));
+    more.title = t(overflow ? 'bm.more' : 'bm.other');
+    more.addEventListener('click', () => {
+      const hidden = buttons.filter((b) => b.hidden).map((b) => Number(b.dataset.id));
+      togglePopup('bmfolder', more, 'right', { more: true, hidden });
+    });
     bar.appendChild(more);
     const limit = bar.clientWidth - 40;
     for (const b of buttons) b.hidden = b.offsetLeft + b.offsetWidth > limit;

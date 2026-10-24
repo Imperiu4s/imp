@@ -81,13 +81,20 @@ class WindowManager {
     return tab ? tab.win : null;
   }
 
+  // Includes each window's preloaded new tab page (see BrowserWin.prepareSpareTab).
   findTab(wc) {
-    for (const w of this.windows) for (const tab of w.tabs) if (tab.view && tab.view.webContents === wc) return tab;
+    for (const w of this.windows) {
+      for (const tab of w.tabs) if (tab.view && tab.view.webContents === wc) return tab;
+      if (w.spareTab?.view && w.spareTab.view.webContents === wc) return w.spareTab;
+    }
     return null;
   }
 
   findTabByWcId(id) {
-    for (const w of this.windows) for (const tab of w.tabs) if (tab.view && tab.view.webContents.id === id) return tab;
+    for (const w of this.windows) {
+      for (const tab of w.tabs) if (tab.view && tab.view.webContents.id === id) return tab;
+      if (w.spareTab?.view && w.spareTab.view.webContents.id === id) return w.spareTab;
+    }
     return null;
   }
 
@@ -115,7 +122,8 @@ class WindowManager {
   }
 
   notifyPages(type = 'refresh', data = null) {
-    for (const tab of this.allTabs()) {
+    const spares = [...this.windows].map((w) => w.spareTab).filter(Boolean);
+    for (const tab of [...this.allTabs(), ...spares]) {
       const wc = tab.wc;
       if (wc && wc.getURL().startsWith('imp://')) wc.send('imp:event', type, data);
     }
