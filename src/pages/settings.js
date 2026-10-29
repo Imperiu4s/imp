@@ -216,6 +216,7 @@
       section(
         'performance',
         `<div class="group">
+          ${sw('performance.freezeTabs', 'set.freeze', 'set.freeze.desc')}
           ${sw('performance.sleepingTabs', 'set.sleeping', 'set.sleeping.desc')}
           ${select(
             'performance.sleepAfter',
@@ -244,6 +245,7 @@
           )}
           ${sw('performance.preconnect', 'set.preconnect', 'set.preconnect.desc')}
           ${sw('performance.preloadNewTab', 'set.preloadNtp', 'set.preloadNtp.desc')}
+          ${sw('performance.youtubeLite', 'set.ytLite', 'set.ytLite.desc')}
           ${sw('performance.hardwareAcceleration', 'set.hwaccel', 'set.hwaccel.desc')}
           <div class="item">${textBlock('set.taskManager', 'set.taskManager.desc')}<a class="btn" href="imp://performance/">${icon('zap', 15)}${esc(t('set.openTaskManager'))}</a></div>
           <div class="item">${textBlock('set.restart', 'set.restart.desc')}<button class="btn" id="relaunch">${icon('reload', 15)}${esc(t('set.restartNow'))}</button></div>

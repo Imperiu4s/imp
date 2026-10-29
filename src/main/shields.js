@@ -8,6 +8,7 @@ const { parse: parseHost, getDomain } = require('tldts');
 const settings = require('./settings');
 const compat = require('./compat');
 const predictor = require('./predictor');
+const youtube = require('./youtube');
 const trace = require('./trace');
 const { JsonFile, dataPath } = require('./store');
 
@@ -255,23 +256,23 @@ function onHeadersReceived(details, callback) {
 // ---- in-page blocking ------------------------------------------------------------
 
 // Scriptlets: small scripts from the filter lists that defuse ads from inside the
-// page (YouTube's video ads, for one). The page preload asks for them
-// synchronously and runs them before any of the page's own scripts. Each one
-// gets a scope of its own: run side by side in the global scope, as the
-// library does, their helper functions overwrite each other and recurse forever
-// (which broke YouTube's blocking).
+// page. The page preload asks for them synchronously (in every frame) and runs
+// them before any of the page's own scripts. Each one gets a scope of its own:
+// run side by side in the global scope, as the library does, their helper
+// functions overwrite each other and recurse forever.
+// YouTube gets Imp's own page code instead (youtube.js): the lists' YouTube
+// scriptlets make every video start slower.
 const SCRIPTLET_GUARD = "if (typeof scriptletGlobals === 'undefined') { var scriptletGlobals = {}; };";
 const scriptletCache = new Map(); // hostname -> code, for the current engine
-// Scriptlets left out because, together with the others, they stop videos from
-// playing: YouTube's "serverContract" rewrite (on YouTube's own pages ads stay
-// blocked without it).
-const SCRIPTLET_SKIP = [/serverContract/];
 
 function scriptletsFor(url) {
-  if (!engine || !/^https?:/.test(url)) return '';
+  if (!/^https?:/.test(url)) return '';
   const parsed = parseHost(url);
   const hostname = parsed.hostname || '';
-  if (!hostname || isAllowlisted(hostname)) return '';
+  if (!hostname) return '';
+  const blocking = !!engine && !isAllowlisted(hostname);
+  if (youtube.isYouTube(hostname)) return youtube.pageCode({ blockAds: blocking, lighter: settings.get('performance.youtubeLite') });
+  if (!blocking) return '';
   if (scriptletCache.has(hostname)) return scriptletCache.get(hostname);
   const { active, scripts } = engine.getCosmeticsFilters({
     domain: parsed.domain || '',
@@ -285,7 +286,7 @@ function scriptletsFor(url) {
   });
   let code = '';
   if (active !== false && scripts.length) {
-    const wrapped = scripts.filter((s) => !SCRIPTLET_SKIP.some((re) => re.test(s))).map((s) => `try { (() => { ${s.startsWith(SCRIPTLET_GUARD) ? s.slice(SCRIPTLET_GUARD.length) : s}\n})(); } catch (e) {}`);
+    const wrapped = scripts.map((s) => `try { (() => { ${s.startsWith(SCRIPTLET_GUARD) ? s.slice(SCRIPTLET_GUARD.length) : s}\n})(); } catch (e) {}`);
     code = `(() => {\nconst scriptletGlobals = {};\n${wrapped.join('\n')}\n})();`;
   }
   if (scriptletCache.size > 300) scriptletCache.clear();
@@ -323,7 +324,7 @@ function init(net, blockedCallback) {
   ipcMain.handle('@ghostery/adblocker/inject-cosmetic-filters', injectCosmetics);
   ipcMain.on('imp:scriptlets', (event) => {
     const frame = event.senderFrame;
-    event.returnValue = frame && frame === event.sender.mainFrame ? scriptletsFor(frame.url) : '';
+    event.returnValue = frame ? scriptletsFor(frame.url) : '';
   });
   ipcMain.handle('@ghostery/adblocker/is-mutation-observer-enabled', () => !!engine?.config.enableMutationObserver);
   settings.on('change', (key) => {

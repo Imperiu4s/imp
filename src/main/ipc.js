@@ -259,6 +259,12 @@ function init(windowManager, net) {
   manager = windowManager;
   netSession = net;
 
+  // From the tab preload (any frame): whether the page used a key that may be one of our shortcuts.
+  ipcMain.on('imp:key', (event, k) => {
+    const tab = manager.findTab(event.sender);
+    if (tab && k && typeof k.key === 'string') tab.win.onPageKey(tab, { key: k.key, code: String(k.code || ''), used: !!k.used });
+  });
+
   // From the tab preload: the pointer is on a link to another site.
   ipcMain.on('imp:preconnect', (event, origin) => {
     if (!settings.get('performance.preconnect') || typeof origin !== 'string' || !/^https?:\/\/[^/]+$/.test(origin)) return;

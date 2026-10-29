@@ -339,6 +339,15 @@ body.mac.fullscreen-native .mac-space {
   margin-left: 2px;
 }
 
+/* arrows at the ends of an overflowing tab strip */
+.tab-scroll {
+  flex: none;
+}
+
+.tab-scroll:disabled {
+  opacity: 0.3;
+}
+
 body.inactive .tabs,
 body.inactive .new-tab {
   opacity: 0.72;

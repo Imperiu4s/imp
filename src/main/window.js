@@ -541,6 +541,7 @@ class BrowserWin {
       const tab = this.activeTab();
       if (tab?.view) visible.set(tab.view, { ...this.pageBounds });
     }
+    for (const tab of this.tabs) if (tab.frozen && visible.has(tab.view)) tab.thaw();
     for (const v of [...this.attached]) if (!visible.has(v)) this.detachView(v);
     const rounded = !!this.split && !ft;
     for (const [view, bounds] of visible) {
@@ -627,8 +628,32 @@ class BrowserWin {
     }
     const cmd = shortcuts.match(input);
     if (!cmd) return;
+    // In a page, the page gets first say: the key goes to it, and its preload
+    // reports whether the page used it (see onPageKey). Without word from the
+    // page (one without our preload, or a hung one) the browser acts anyway.
+    if (tab && !shortcuts.isReserved(cmd.name)) {
+      if (tab.pendingShortcut) clearTimeout(tab.pendingShortcut.timer);
+      const pending = { cmd, key: input.key, code: input.code };
+      pending.timer = setTimeout(() => {
+        if (tab.pendingShortcut !== pending) return;
+        tab.pendingShortcut = null;
+        this.command(cmd.name, cmd.arg);
+      }, 400);
+      tab.pendingShortcut = pending;
+      return;
+    }
     event.preventDefault();
     this.command(cmd.name, cmd.arg);
+  }
+
+  // From the page's preload: a key that may be one of our shortcuts reached the
+  // page, which did or didn't use it (preventDefault).
+  onPageKey(tab, { key, code, used }) {
+    const pending = tab.pendingShortcut;
+    if (!pending || (pending.key !== key && pending.code !== code)) return;
+    clearTimeout(pending.timer);
+    tab.pendingShortcut = null;
+    if (!used) this.command(pending.cmd.name, pending.cmd.arg);
   }
 
   // ---- popups & bubbles ------------------------------------------------------------------
@@ -1025,6 +1050,7 @@ class BrowserWin {
       case 'fullscreen':
         return this.win.setFullScreen(!this.win.isFullScreen());
       case 'devtools':
+        tab?.thaw();
         return tab?.wc?.toggleDevTools();
       case 'print':
         return tab?.wc?.print();

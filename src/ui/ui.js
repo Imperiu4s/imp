@@ -220,6 +220,7 @@
       tabEls.get(state.activeId)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     }
     updateNarrow();
+    updateTabScroll();
     updateToolbar();
     renderInfobar();
     updateBookmarksBarVisibility();
@@ -236,18 +237,18 @@
     for (const el of tabEls.values()) el.classList.toggle('narrow', narrow);
   }
 
-  // drag to reorder
+  // Drag to reorder. The listeners sit on the window: moving the tab in the DOM
+  // drops pointer capture, which used to stop the drag after a single step.
   let drag = null;
   function onTabPointerDown(e) {
-    if (e.button !== 0) return;
+    if (e.button !== 0 || e.target.closest('.tab-close, .tab-audio')) return;
     const el = e.currentTarget;
     const id = Number(el.dataset.id);
     if (id !== state.activeId) api.send('tab:activate', id);
-    drag = { id, el, x: e.clientX, y: e.clientY, active: false };
-    el.setPointerCapture(e.pointerId);
-    el.addEventListener('pointermove', onTabPointerMove);
-    el.addEventListener('pointerup', onTabPointerUp, { once: true });
-    el.addEventListener('pointercancel', onTabPointerUp, { once: true });
+    drag = { id, el, x: e.clientX, y: e.clientY, lastX: e.clientX, lastY: e.clientY, active: false, edge: 0 };
+    window.addEventListener('pointermove', onTabPointerMove);
+    window.addEventListener('pointerup', onTabPointerUp);
+    window.addEventListener('pointercancel', onTabPointerUp);
   }
 
   function onTabPointerMove(e) {
@@ -259,10 +260,39 @@
       drag.active = true;
       drag.el.classList.add('dragging');
     }
+    drag.lastX = e.clientX;
+    drag.lastY = e.clientY;
+    placeDraggedTab();
+    // Near either end of an overflowing strip, keep scrolling towards it.
+    const container = drag.el.parentNode;
+    const r = container.getBoundingClientRect();
+    const pos = vertical ? e.clientY : e.clientX;
+    const start = vertical ? r.top : r.left;
+    const end = vertical ? r.bottom : r.right;
+    drag.edge = pos < start + 28 ? -1 : pos > end - 28 ? 1 : 0;
+    if (drag.edge && !drag.scrolling) {
+      drag.scrolling = true;
+      const step = () => {
+        if (!drag?.edge) {
+          if (drag) drag.scrolling = false;
+          return;
+        }
+        if (vertical) container.scrollTop += drag.edge * 14;
+        else container.scrollLeft += drag.edge * 14;
+        placeDraggedTab();
+        requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    }
+  }
+
+  // Puts the dragged tab where the pointer is, among the tabs of its kind (pinned or not).
+  function placeDraggedTab() {
+    const vertical = settings.appearance.verticalTabs;
     const container = drag.el.parentNode;
     const pinned = drag.el.classList.contains('pinned');
     const siblings = [...container.children].filter((c) => c !== drag.el && c.classList.contains('tab') && c.classList.contains('pinned') === pinned);
-    const pos = vertical ? e.clientY : e.clientX;
+    const pos = vertical ? drag.lastY : drag.lastX;
     let idx = 0;
     for (const sib of siblings) {
       const r = sib.getBoundingClientRect();
@@ -280,7 +310,9 @@
   function onTabPointerUp() {
     if (!drag) return;
     const { el, id, active } = drag;
-    el.removeEventListener('pointermove', onTabPointerMove);
+    window.removeEventListener('pointermove', onTabPointerMove);
+    window.removeEventListener('pointerup', onTabPointerUp);
+    window.removeEventListener('pointercancel', onTabPointerUp);
     el.classList.remove('dragging');
     drag = null;
     if (active) {
@@ -302,6 +334,24 @@
   $('#tabs-h').addEventListener('dblclick', (e) => {
     if (e.target.id === 'tabs-h') api.send('tab:new', {});
   });
+
+  // With more tabs than fit, arrows at both ends jump to the first and last tabs.
+  function updateTabScroll() {
+    const strip = $('#tabs-h');
+    const vertical = settings?.appearance.verticalTabs;
+    const overflow = !vertical && strip.scrollWidth > strip.clientWidth + 1;
+    $('#tabs-start').hidden = !overflow;
+    $('#tabs-end').hidden = !overflow;
+    if (!overflow) return;
+    $('#tabs-start').disabled = strip.scrollLeft <= 0;
+    $('#tabs-end').disabled = strip.scrollLeft + strip.clientWidth >= strip.scrollWidth - 1;
+  }
+  $('#tabs-start').innerHTML = icon('chevronLeft', 15);
+  $('#tabs-end').innerHTML = icon('chevronRight', 15);
+  $('#tabs-start').addEventListener('click', () => $('#tabs-h').scrollTo({ left: 0, behavior: 'smooth' }));
+  $('#tabs-end').addEventListener('click', () => $('#tabs-h').scrollTo({ left: $('#tabs-h').scrollWidth, behavior: 'smooth' }));
+  $('#tabs-h').addEventListener('scroll', updateTabScroll, { passive: true });
+  new ResizeObserver(updateTabScroll).observe($('#tabs-h'));
 
   // ------------------------------------------------------------------ toolbar
   const urlInput = $('#url');

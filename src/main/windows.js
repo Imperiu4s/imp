@@ -205,7 +205,10 @@ class WindowManager {
     return mode === 'on' || (mode === 'auto' && powerMonitor.isOnBatteryPower());
   }
 
+  // Every minute: freeze tabs left in the background a few minutes, and put
+  // long unused ones to sleep (when those features are on).
   sleepCheck() {
+    this.freezeCheck();
     if (!settings.get('performance.sleepingTabs')) return;
     let minutes = settings.get('performance.sleepAfter');
     if (this.efficiencyActive()) minutes = Math.min(minutes, 5);
@@ -216,6 +219,31 @@ class WindowManager {
         if (tab.audible || tab.permissionRequests.length) continue;
         if (tab.wc.isCurrentlyAudible() || tab.wc.isDevToolsOpened()) continue;
         tab.sleep();
+      }
+    }
+  }
+
+  freezeCheck() {
+    if (!settings.get('performance.freezeTabs')) return;
+    const now = Date.now();
+    const cutoff = now - (this.efficiencyActive() ? 2 : 5) * 60_000;
+    for (const w of this.windows) {
+      for (const tab of w.tabs) {
+        const wc = tab.wc;
+        if (!wc || tab.frozen || tab.sleeping || tab.pinned || w.isVisible(tab) || tab.lastActive > cutoff) continue;
+        // Tabs that may be doing something for you in the background keep running:
+        // sound (now or lately), calls and screen sharing, pages still loading or
+        // asking for a permission, DevTools, and sites allowed to notify you.
+        if (tab.audible || now - (tab.lastAudible || 0) < 5 * 60_000 || wc.isCurrentlyAudible()) continue;
+        if (tab.loading || tab.permissionRequests.length || wc.isBeingCaptured() || wc.isDevToolsOpened()) continue;
+        const url = wc.getURL();
+        if (!/^https?:/.test(url)) continue;
+        let origin = '';
+        try {
+          origin = new URL(url).origin;
+        } catch {}
+        if (require('./permissions').decision(origin, 'notifications') === 'allow') continue;
+        tab.freeze();
       }
     }
   }

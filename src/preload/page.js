@@ -1,9 +1,25 @@
 'use strict';
-// Runs in every tab. Only Imp's own imp:// pages get the privileged bridge;
-// ordinary websites see nothing.
+// Runs in every frame of every tab (iframes too: keyboard shortcuts, the chrome
+// object and in-page ad blocking; the rest only in the top frame). Only Imp's
+// own imp:// pages get the privileged bridge; ordinary websites see nothing.
 const { contextBridge, ipcRenderer, webFrame } = require('electron');
 
-if (location.protocol === 'imp:') {
+const isTop = window === window.top;
+
+// Keyboard shortcuts: the page gets first say. Keys that may be one of Imp's
+// shortcuts are reported after the page has seen them, saying whether it used
+// them (preventDefault); the browser only acts on unused ones (handleInput in
+// src/main/window.js).
+addEventListener(
+  'keydown',
+  (e) => {
+    if (!e.isTrusted || !(e.ctrlKey || e.metaKey || e.altKey || /^F\d{1,2}$/.test(e.key) || (e.shiftKey && e.key === 'Escape'))) return;
+    setTimeout(() => ipcRenderer.send('imp:key', { key: e.key, code: e.code, used: e.defaultPrevented }));
+  },
+  true,
+);
+
+if (location.protocol === 'imp:' && isTop) {
   contextBridge.exposeInMainWorld('imp', {
     call: (method, ...args) => ipcRenderer.invoke('imp:api', method, args),
     on: (fn) => ipcRenderer.on('imp:event', (event, type, data) => fn(type, data)),
@@ -14,7 +30,7 @@ if (location.protocol === 'imp:') {
 // presses it), open the connection to that site already, so the page starts
 // loading 100–300 ms sooner. The main process skips this when "Preconnect to
 // pages" is turned off.
-if (/^https?:$/.test(location.protocol)) {
+if (/^https?:$/.test(location.protocol) && isTop) {
   const done = new Map();
   let hoverTimer = 0;
   const warm = (target) => {
@@ -35,7 +51,7 @@ if (/^https?:$/.test(location.protocol)) {
 // Password manager (see src/main/autofill.js): notices sign-ins so Imp can offer
 // to save the password, and fills a saved account when you pick it from the list
 // that Imp shows under a login field. The page never gets a password by itself.
-if (/^https?:$/.test(location.protocol)) {
+if (/^https?:$/.test(location.protocol) && isTop) {
   const TEXT_TYPES = new Set(['text', 'email', 'tel']);
   const USER_HINT = /user|login|e-?mail|account|ident|felhaszn|benutzer/i;
   const isInput = (el) => el instanceof HTMLInputElement;

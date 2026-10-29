@@ -50,6 +50,8 @@ const DEFAULTS = {
     hardwareAcceleration: true,
     preconnect: true, // also enables the loading predictor (predictor.js)
     preloadNewTab: true,
+    youtubeLite: true, // YouTube without ambient mode (youtube.js)
+    freezeTabs: true, // background tabs stop running after a few minutes (Tab.freeze)
   },
   downloads: {
     dir: '',

@@ -74,9 +74,20 @@ for (let i = 1; i <= 9; i++) BINDINGS.push(['mod', String(i), 'select-tab', i]);
 
 const table = new Map();
 for (const [mods, key, name, arg] of BINDINGS) {
+  // "mod+ctrl" (Cmd+Ctrl) only exists on macOS; elsewhere it would collapse into
+  // plain Ctrl and take over another shortcut (Ctrl+F used to go full screen).
+  if (!isMac && mods.split('+').includes('mod') && mods.split('+').includes('ctrl')) continue;
   const set = new Set(mods.split('+').filter(Boolean).map((m) => (m === 'mod' ? (isMac ? 'meta' : 'ctrl') : m)));
   const id = ['ctrl', 'meta', 'alt', 'shift'].map((m) => (set.has(m) ? m : '')).join('|') + `|${key.toLowerCase()}`;
   table.set(id, { name, arg });
+}
+
+// Shortcuts the browser always keeps, whatever the page does (as in Chrome).
+// Every other one goes to the page first (see BrowserWin.handleInput).
+const RESERVED = new Set(['new-tab', 'new-window', 'new-private-window', 'close-tab', 'close-window', 'reopen-closed-tab', 'next-tab', 'prev-tab', 'fullscreen', 'devtools']);
+
+function isReserved(name) {
+  return RESERVED.has(name);
 }
 
 function match(input) {
@@ -112,4 +123,4 @@ function describe() {
   return [...seen.entries()].map(([name, keys]) => ({ name, keys }));
 }
 
-module.exports = { match, describe };
+module.exports = { match, describe, isReserved };

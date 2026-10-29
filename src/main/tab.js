@@ -77,6 +77,7 @@ class Tab {
   }
 
   load(url) {
+    this.thaw();
     this.url = url;
     this.errorUrl = null;
     if (!this.wc) {
@@ -101,9 +102,43 @@ class Tab {
     }
   }
 
+  // ---- freezing: background tabs stop running (no scripts, timers or drawing) but
+  // stay in memory, and continue right where they were when shown again. Unlike
+  // sleeping, nothing reloads. Chromium's own page lifecycle "frozen" state, set
+  // through the DevTools protocol (Electron has no other way to reach it).
+  async freeze() {
+    const wc = this.wc;
+    if (!wc || this.frozen || this.sleeping) return false;
+    this.frozen = true; // set first, so a thaw() meanwhile still sends "active" after this
+    try {
+      if (!wc.debugger.isAttached()) wc.debugger.attach('1.3');
+      await wc.debugger.sendCommand('Page.setWebLifecycleState', { state: 'frozen' });
+      return true;
+    } catch {
+      this.frozen = false;
+      return false;
+    }
+  }
+
+  thaw() {
+    if (!this.frozen) return;
+    this.frozen = false;
+    const wc = this.wc;
+    if (!wc) return;
+    wc.debugger
+      .sendCommand('Page.setWebLifecycleState', { state: 'active' })
+      .catch(() => {})
+      .finally(() => {
+        try {
+          if (!this.frozen && wc.debugger.isAttached()) wc.debugger.detach();
+        } catch {}
+      });
+  }
+
   sleep() {
     const wc = this.wc;
     if (!wc || this.sleeping) return false;
+    this.frozen = false;
     this.captureHistory();
     this.url = this.errorUrl || wc.getURL() || this.url;
     this.destroyView();
@@ -216,16 +251,19 @@ class Tab {
   // ---- navigation --------------------------------------------------------------
 
   goBack() {
+    this.thaw();
     if (this.sleeping) this.wake();
     if (this.wc?.navigationHistory.canGoBack()) this.wc.navigationHistory.goBack();
   }
 
   goForward() {
+    this.thaw();
     if (this.sleeping) this.wake();
     if (this.wc?.navigationHistory.canGoForward()) this.wc.navigationHistory.goForward();
   }
 
   reload(hard = false) {
+    this.thaw();
     if (this.sleeping) return this.wake();
     if (!this.wc) return;
     if (this.crashed || this.errorUrl) return this.load(this.errorUrl || this.url);
@@ -432,6 +470,7 @@ class Tab {
 
     wc.on('audio-state-changed', (event) => {
       this.audible = !!event.audible;
+      if (this.audible) this.lastAudible = Date.now();
       this.changed();
     });
 
@@ -501,6 +540,9 @@ Tab.webPreferences = () => ({
   contextIsolation: true,
   nodeIntegration: false,
   plugins: true,
+  // The page preload also runs in iframes: keyboard shortcuts typed there, the
+  // chrome object and in-page ad blocking (e.g. embedded YouTube videos).
+  nodeIntegrationInSubFrames: true,
   spellcheck: true,
   safeDialogs: true,
   backgroundThrottling: true,
