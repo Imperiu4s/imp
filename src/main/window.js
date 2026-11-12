@@ -81,6 +81,9 @@ class BrowserWin {
     this.id = this.win.id;
     this.wireWindow(opts);
     this.webContents.loadFile(UI_HTML, { query: { private: this.isPrivate ? '1' : '0', platform: process.platform } });
+    // Show the window right away, in the theme's colours, as Chrome does; the
+    // toolbar and tabs appear in it a moment later, once the interface has loaded.
+    this.reveal();
   }
 
   static defaultBounds() {
@@ -123,8 +126,6 @@ class BrowserWin {
   wireWindow(opts) {
     const win = this.win;
     const wc = this.webContents;
-    // Show the window as soon as the browser UI has its state (a frame later),
-    // instead of waiting for Chromium's 'ready-to-show', which fires ~200 ms later.
     this.reveal = () => {
       if (this.revealed || win.isDestroyed()) return;
       this.revealed = true;
@@ -133,7 +134,6 @@ class BrowserWin {
       if (opts.inactive) win.showInactive();
       else win.show();
     };
-    win.once('ready-to-show', this.reveal);
     win.on('focus', () => {
       this.manager.lastFocused = this;
       this.send('win:focus', true);
@@ -149,6 +149,8 @@ class BrowserWin {
     win.on('move', () => this.closePopup(null, true));
     win.on('enter-full-screen', () => this.send('win:fullscreen', true));
     win.on('leave-full-screen', () => {
+      // Windows can lose the caption buttons' overlay on the way out of full screen.
+      if (process.platform !== 'darwin') this.win.setTitleBarOverlay(this.titleBarOverlay());
       this.send('win:fullscreen', false);
       if (this.fullscreenTab) {
         this.fullscreenTab.wc?.executeJavaScript('document.fullscreenElement && document.exitFullscreen()').catch(() => {});
@@ -220,7 +222,6 @@ class BrowserWin {
     this.uiReady = true;
     this.send('state:init', this.initialState());
     this.sendTabs();
-    setTimeout(this.reveal, 20);
     this.scheduleSpareTab(4000);
   }
 
@@ -556,9 +557,11 @@ class BrowserWin {
 
   setHtmlFullscreen(tab, on) {
     if (on) {
+      // Only on the way in: a player asking again while already full screen must
+      // not make us think the window was full screen before (it would stay so).
+      if (!this.fullscreenTab) this.wasFullscreen = this.win.isFullScreen();
       this.fullscreenTab = tab;
-      this.wasFullscreen = this.win.isFullScreen();
-      if (!this.wasFullscreen) this.win.setFullScreen(true);
+      if (!this.win.isFullScreen()) this.win.setFullScreen(true);
     } else if (this.fullscreenTab === tab) {
       this.fullscreenTab = null;
       if (!this.wasFullscreen && this.win.isFullScreen()) this.win.setFullScreen(false);

@@ -6,10 +6,10 @@
   --border: rgba(255, 255, 255, 0.09);
   --text: #eef0ff;
   --text-2: #a6acc8;
-  --orange: #ff9a1f;
-  --pink: #e0337e;
-  --violet: #7c3aed;
-  --grad: linear-gradient(120deg, var(--violet), var(--pink) 55%, var(--orange));
+  --sky: #3cd3f7;
+  --blue: #2f80ed;
+  --deep: #3557d6;
+  --grad: linear-gradient(120deg, var(--deep), var(--blue) 55%, var(--sky));
   --radius: 18px;
   --font: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "SF Pro Text", Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
   --display: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, "SF Pro Display", Ubuntu, "Helvetica Neue", Arial, sans-serif;
@@ -522,8 +522,8 @@ h1 {
   border-radius: 11px;
   display: grid;
   place-items: center;
-  background: rgba(255, 154, 31, 0.16);
-  color: var(--orange);
+  background: rgba(60, 211, 247, 0.16);
+  color: var(--sky);
 }
 
 .fc-ic.violet {

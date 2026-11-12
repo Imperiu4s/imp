@@ -3,6 +3,7 @@
 // blocking and Global Privacy Control — all in one webRequest pipeline
 // (Electron only allows one listener per webRequest event).
 const fs = require('node:fs');
+const crypto = require('node:crypto');
 const { ipcMain, webContents } = require('electron');
 const { parse: parseHost, getDomain } = require('tldts');
 const settings = require('./settings');
@@ -184,7 +185,7 @@ function onBeforeRequest(details, callback) {
   const { match, redirect } = engine.match(request);
   if (redirect) {
     record(details);
-    return callback({ redirectURL: redirect.dataUrl });
+    return callback({ redirectURL: decoyUrl(redirect) });
   }
   if (match) {
     record(details);
@@ -253,15 +254,45 @@ function onHeadersReceived(details, callback) {
   callback(changed ? { responseHeaders: headers } : {});
 }
 
+// ---- decoys ------------------------------------------------------------------------
+
+// Some blocked requests are answered with a harmless stand-in instead (filters with
+// $redirect): an ad_status.js that reports ads as loaded, a no-op analytics.js, an
+// empty reply for an ad-ID request… Sites check for these (YouTube's ad blocker
+// wall does), so they must arrive. The library redirects to data: URLs, which
+// Chromium refuses to follow, so they are served from a scheme of our own.
+const DECOY_SCHEME = 'impres';
+const decoys = new Map(); // key -> { type, body }
+
+function decoyUrl(redirect) {
+  const key = crypto.createHash('sha1').update(redirect.dataUrl).digest('hex').slice(0, 20);
+  if (!decoys.has(key)) {
+    const m = /^data:([^,]*?)(;base64)?,(.*)$/s.exec(redirect.dataUrl);
+    const body = m ? (m[2] ? Buffer.from(m[3], 'base64') : Buffer.from(decodeURIComponent(m[3]))) : Buffer.from(redirect.body || '');
+    decoys.set(key, { type: (m && m[1]) || redirect.contentType || 'text/plain', body });
+  }
+  return `${DECOY_SCHEME}://decoy/${key}`;
+}
+
+function serveDecoy(request) {
+  const decoy = decoys.get(new URL(request.url).pathname.slice(1));
+  if (!decoy) return new Response('', { status: 404 });
+  const origin = request.headers.get('origin');
+  const headers = { 'content-type': decoy.type, 'cache-control': 'no-store' };
+  if (origin && origin !== 'null') Object.assign(headers, { 'access-control-allow-origin': origin, 'access-control-allow-credentials': 'true' });
+  else headers['access-control-allow-origin'] = '*';
+  return new Response(decoy.body, { headers });
+}
+
 // ---- in-page blocking ------------------------------------------------------------
 
 // Scriptlets: small scripts from the filter lists that defuse ads from inside the
-// page. The page preload asks for them synchronously (in every frame) and runs
-// them before any of the page's own scripts. Each one gets a scope of its own:
-// run side by side in the global scope, as the library does, their helper
-// functions overwrite each other and recurse forever.
-// YouTube gets Imp's own page code instead (youtube.js): the lists' YouTube
-// scriptlets make every video start slower.
+// page (YouTube's video ads, for one). The page preload asks for them
+// synchronously (in every frame) and runs them before any of the page's own
+// scripts. Each one gets a scope of its own: run side by side in the global
+// scope, as the library does, their helper functions overwrite each other and
+// recurse forever. On YouTube only some of them run, plus Imp's lighter player
+// (youtube.js).
 const SCRIPTLET_GUARD = "if (typeof scriptletGlobals === 'undefined') { var scriptletGlobals = {}; };";
 const scriptletCache = new Map(); // hostname -> code, for the current engine
 
@@ -270,28 +301,31 @@ function scriptletsFor(url) {
   const parsed = parseHost(url);
   const hostname = parsed.hostname || '';
   if (!hostname) return '';
-  const blocking = !!engine && !isAllowlisted(hostname);
-  if (youtube.isYouTube(hostname)) return youtube.pageCode({ blockAds: blocking, lighter: settings.get('performance.youtubeLite') });
-  if (!blocking) return '';
-  if (scriptletCache.has(hostname)) return scriptletCache.get(hostname);
-  const { active, scripts } = engine.getCosmeticsFilters({
-    domain: parsed.domain || '',
-    hostname,
-    url,
-    getBaseRules: false,
-    getInjectionRules: true,
-    getExtendedRules: false,
-    getRulesFromHostname: true,
-    getRulesFromDOM: false,
-  });
-  let code = '';
-  if (active !== false && scripts.length) {
-    const wrapped = scripts.map((s) => `try { (() => { ${s.startsWith(SCRIPTLET_GUARD) ? s.slice(SCRIPTLET_GUARD.length) : s}\n})(); } catch (e) {}`);
-    code = `(() => {\nconst scriptletGlobals = {};\n${wrapped.join('\n')}\n})();`;
+  const onYouTube = youtube.isYouTube(hostname);
+  const extra = onYouTube ? youtube.pageCode({ lighter: settings.get('performance.youtubeLite') }) : '';
+  if (!engine || isAllowlisted(hostname)) return extra;
+  if (!scriptletCache.has(hostname)) {
+    const { active, scripts } = engine.getCosmeticsFilters({
+      domain: parsed.domain || '',
+      hostname,
+      url,
+      getBaseRules: false,
+      getInjectionRules: true,
+      getExtendedRules: false,
+      getRulesFromHostname: true,
+      getRulesFromDOM: false,
+    });
+    let code = '';
+    if (active !== false && scripts.length) {
+      const wrapped = scripts
+        .filter((s) => !onYouTube || youtube.keepScriptlet(s))
+        .map((s) => `try { (() => { ${s.startsWith(SCRIPTLET_GUARD) ? s.slice(SCRIPTLET_GUARD.length) : s}\n})(); } catch (e) {}`);
+      code = `(() => {\nconst scriptletGlobals = {};\n${wrapped.join('\n')}\n})();`;
+    }
+    if (scriptletCache.size > 300) scriptletCache.clear();
+    scriptletCache.set(hostname, code);
   }
-  if (scriptletCache.size > 300) scriptletCache.clear();
-  scriptletCache.set(hostname, code);
-  return code;
+  return [scriptletCache.get(hostname), extra].filter(Boolean).join('\n');
 }
 
 // Element hiding (CSS), as the library does it, minus the scriptlets (above).
@@ -335,6 +369,7 @@ function init(net, blockedCallback) {
 
 function setupSession(ses) {
   ses.registerPreloadScript({ type: 'frame', filePath: PRELOAD_PATH });
+  if (!ses.protocol.isProtocolHandled(DECOY_SCHEME)) ses.protocol.handle(DECOY_SCHEME, serveDecoy);
   const filter = { urls: ['<all_urls>'] };
   ses.webRequest.onBeforeRequest(filter, onBeforeRequest);
   ses.webRequest.onBeforeSendHeaders(filter, onBeforeSendHeaders);

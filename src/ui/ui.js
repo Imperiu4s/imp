@@ -1090,11 +1090,19 @@
   // ------------------------------------------------------------------ page area bounds
   const pageArea = $('#page-area');
   let boundsRaf = 0;
+  function sendBounds() {
+    const r = pageArea.getBoundingClientRect();
+    api.send('ui:bounds', { x: r.left, y: r.top, width: r.width, height: r.height });
+  }
+
   function reportBounds() {
+    // Right away too: while a page covers the whole window (full screen) this
+    // document counts as hidden and gets no animation frames, and the page
+    // would stay over the toolbar after leaving full screen.
+    sendBounds();
     cancelAnimationFrame(boundsRaf);
     boundsRaf = requestAnimationFrame(() => {
-      const r = pageArea.getBoundingClientRect();
-      api.send('ui:bounds', { x: r.left, y: r.top, width: r.width, height: r.height });
+      sendBounds();
       renderSplit();
       updateNarrow();
     });

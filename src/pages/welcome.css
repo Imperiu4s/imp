@@ -10,9 +10,9 @@ body {
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(50% 45% at 20% 15%, color-mix(in srgb, #ff9a1f 26%, transparent), transparent 70%),
-    radial-gradient(45% 50% at 85% 20%, color-mix(in srgb, #7c3aed 26%, transparent), transparent 70%),
-    radial-gradient(60% 50% at 50% 105%, color-mix(in srgb, #e0337e 24%, transparent), transparent 70%),
+    radial-gradient(50% 45% at 20% 15%, color-mix(in srgb, #3cd3f7 24%, transparent), transparent 70%),
+    radial-gradient(45% 50% at 85% 20%, color-mix(in srgb, #1e3fae 30%, transparent), transparent 70%),
+    radial-gradient(60% 50% at 50% 105%, color-mix(in srgb, #2f80ed 26%, transparent), transparent 70%),
     var(--bg);
 }
 

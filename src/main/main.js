@@ -7,6 +7,8 @@ const trace = require('./trace');
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'imp', privileges: { standard: true, secure: true, supportFetchAPI: true, codeCache: true } },
+  // Decoy resources the ad blocker answers blocked ad scripts with (see shields.js).
+  { scheme: 'impres', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, bypassCSP: true } },
 ]);
 
 app.setAppUserModelId('io.github.imp.browser');
@@ -38,6 +40,10 @@ function addFeatures(which, list) {
 addFeatures('disable-features', ['FedCm']);
 // Download large files over several connections at once.
 addFeatures('enable-features', ['ParallelDownloading']);
+// Videos always drawn the same way: as a hardware overlay (no controls on top)
+// they went through the graphics driver's own colour processing, and the colours
+// changed whenever the player's controls appeared over them.
+if (process.platform === 'win32') app.commandLine.appendSwitch('disable_direct_composition_video_overlays');
 
 // Present ourselves exactly like a regular Chromium browser (reduced UA), so
 // websites don't serve degraded "unsupported browser" pages.
@@ -162,8 +168,7 @@ function start() {
     const net = session.fromPartition('imp-net');
     manager.init(browsing);
     manager.setupSession(browsing, false);
-    shields.init(net, (wcId, url) => manager.findTabByWcId(wcId)?.noteBlocked(url));
-    trace.mark('sessions + shields set up');
+    trace.mark('sessions set up');
     configureDns();
     internal.init(manager, updater);
     ipc.init(manager, net);
@@ -194,6 +199,12 @@ function start() {
       manager.createWindow({ url: urls.shift() });
       urls.forEach((u) => manager.openUrl(u));
     }
+    trace.mark('first window created');
+    // The ad-block engine loads (synchronously, ~150 ms) only now, while the new
+    // window's interface starts up in its own process. No request slips through
+    // meanwhile: their webRequest handlers run on this thread, after it.
+    shields.init(net, (wcId, url) => manager.findTabByWcId(wcId)?.noteBlocked(url));
+    trace.mark('ad blocker ready');
     // One-time moves to newer defaults, only where the old default was never changed.
     const previous = settings.get('meta.lastVersion');
     if (previous && previous !== app.getVersion()) {
@@ -205,7 +216,6 @@ function start() {
       }
     }
     settings.set('meta.lastVersion', app.getVersion());
-    trace.mark('first window created');
     ready = true;
     updater.init(manager);
   });

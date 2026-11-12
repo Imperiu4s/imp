@@ -100,18 +100,18 @@ fs.writeFileSync(out('site/favicon.ico'), buildIco([16, 32, 48].map((size) => ({
 const sidebarSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="164" height="314" viewBox="0 0 164 314">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="164" y2="314" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#140A26"/><stop offset="1" stop-color="#2A0F3A"/>
+      <stop offset="0" stop-color="#081530"/><stop offset="1" stop-color="#0E2552"/>
     </linearGradient>
     <radialGradient id="h" cx="82" cy="96" r="120" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#E0337E" stop-opacity="0.5"/><stop offset="1" stop-color="#7C3AED" stop-opacity="0"/>
+      <stop offset="0" stop-color="#2F80ED" stop-opacity="0.55"/><stop offset="1" stop-color="#1E3FAE" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect width="164" height="314" fill="url(#g)"/>
   <rect width="164" height="314" fill="url(#h)"/>
   ${embed(42, 56, 80)}
   <text x="82" y="176" text-anchor="middle" font-family="Segoe UI" font-weight="700" font-size="26" fill="#FFFFFF">Imp</text>
-  <text x="82" y="200" text-anchor="middle" font-family="Segoe UI" font-size="11" fill="#FFC2DD">Fast. Private. Light.</text>
-  <rect x="52" y="270" width="60" height="3" rx="1.5" fill="#FF9A1F" opacity="0.85"/>
+  <text x="82" y="200" text-anchor="middle" font-family="Segoe UI" font-size="11" fill="#BFE6FF">Fast. Private. Light.</text>
+  <rect x="52" y="270" width="60" height="3" rx="1.5" fill="#3CD3F7" opacity="0.85"/>
 </svg>`;
 fs.writeFileSync(out('build/installerSidebar.bmp'), buildBmp(render(sidebarSvg, 164)));
 fs.writeFileSync(out('build/uninstallerSidebar.bmp'), buildBmp(render(sidebarSvg, 164)));
