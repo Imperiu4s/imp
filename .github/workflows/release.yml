@@ -39,7 +39,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        # macOS pinned: since late October 2026 "macos-latest" jobs wait for a runner
+        # that never comes and are cancelled after 15 minutes.
+        os: [windows-latest, macos-15, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
