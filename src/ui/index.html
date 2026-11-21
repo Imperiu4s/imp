@@ -5,6 +5,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src * data: blob:; connect-src 'none'; object-src 'none'">
   <title>Imp</title>
   <link rel="stylesheet" href="ui.css">
+  <link rel="stylesheet" href="classic.css">
 </head>
 <body>
   <div id="app">
@@ -31,6 +32,7 @@
       <div id="omnibox" class="no-drag">
         <button id="site-btn" class="site-btn" data-tip="tip.siteInfo"></button>
         <input id="url" type="text" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off">
+        <div id="url-view" aria-hidden="true" hidden></div>
         <button id="zoom-chip" class="chip" hidden></button>
         <button id="btn-reader" class="icon-btn small" data-tip="tip.reader" hidden></button>
         <button id="btn-key" class="icon-btn small" data-tip="tip.savePassword" hidden></button>

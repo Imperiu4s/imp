@@ -1,5 +1,6 @@
 'use strict';
 // IPC between the browser UI / popup overlay and the main process.
+const fs = require('node:fs');
 const { ipcMain } = require('electron');
 const settings = require('./settings');
 const bookmarks = require('./bookmarks');
@@ -13,6 +14,7 @@ const autofill = require('./autofill');
 const predictor = require('./predictor');
 const Tab = require('./tab');
 const { t } = require('./i18n');
+const trace = require('./trace');
 
 let manager;
 let netSession;
@@ -365,6 +367,16 @@ function init(windowManager, net) {
   on('download:op', (w, op, id) => {
     if (op === 'open') downloads.open(String(id));
   });
+  // A finished download dragged off the download bar: the file itself goes
+  // along (into a page's upload field, onto the desktop, into another app).
+  ipcMain.on('download:drag', (event, id) => {
+    const w = winOf(event);
+    if (!w || event.sender !== w.webContents) return;
+    const info = downloads.find(String(id));
+    if (!info || info.state !== 'completed' || !info.path || !fs.existsSync(info.path)) return;
+    event.sender.startDrag({ file: info.path, icon: downloads.dragIcon(info) });
+    trace.mark('download dragged', false);
+  });
   // Drag and drop on the bookmarks bar and in its folder lists.
   const validParent = (p) => p === 'bar' || p === 'other' || bookmarks.find(Number(p))?.type === 'folder';
   const parentOf = (p) => (p === 'bar' || p === 'other' ? p : Number(p));
@@ -387,7 +399,7 @@ function init(windowManager, net) {
   });
   downloads.on('change', () => {
     const progress = downloads.progress();
-    manager.broadcast('state:downloads', { ...progress, hasDownloads: true, items: downloads.list().slice(0, 15) });
+    manager.broadcast('state:downloads', { ...progress, hasDownloads: true, items: downloads.recent(15) });
     for (const w of manager.windows) {
       if (!w.win.isDestroyed()) w.win.setProgressBar(progress.count ? (progress.fraction < 0 ? 2 : progress.fraction) : -1);
       if (w.popup?.type === 'downloads') w.updatePopup('downloads', popupData(w, 'downloads'));

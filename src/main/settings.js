@@ -5,6 +5,7 @@ const { JsonFile } = require('./store');
 const DEFAULTS = {
   appearance: {
     theme: 'system', // system | light | dark
+    style: 'classic', // classic (the 2018 browser look) | modern
     accent: '#8B5CF6',
     verticalTabs: false,
     sidebarCollapsed: false,

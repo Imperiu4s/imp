@@ -27,6 +27,7 @@
   const darkMQ = matchMedia('(prefers-color-scheme: dark)');
   function applyTheme() {
     document.body.dataset.theme = isPrivate ? 'private' : darkMQ.matches ? 'dark' : 'light';
+    document.body.classList.toggle('classic', settings?.appearance.style !== 'modern');
     if (settings && !isPrivate) document.documentElement.style.setProperty('--accent', settings.appearance.accent);
   }
   darkMQ.addEventListener('change', applyTheme);

@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { EventEmitter } = require('node:events');
-const { app, shell } = require('electron');
+const { app, shell, nativeImage } = require('electron');
 const settings = require('./settings');
 const { JsonFile } = require('./store');
 
@@ -115,6 +115,40 @@ class Downloads extends EventEmitter {
     const active = [...this.active.values()].map((a) => a.info);
     const done = this.file.data.items.map((i) => ({ ...i, exists: i.state !== 'completed' || fs.existsSync(i.path) }));
     return [...active, ...done];
+  }
+
+  // The system's icon for a file (the download bar shows it, and it is the
+  // picture under the pointer when a file is dragged out). Looked up once per
+  // file type — per file for programs and icons, which carry their own.
+  fileIcon(info) {
+    if (!info?.path) return null;
+    const ext = path.extname(info.path).toLowerCase();
+    const key = /^\.(exe|ico|lnk|msi|url)$/.test(ext) && info.state === 'completed' ? info.path : ext || '(none)';
+    this.icons ||= new Map();
+    if (this.icons.has(key)) return this.icons.get(key);
+    this.icons.set(key, null);
+    app
+      .getFileIcon(info.path, { size: 'normal' })
+      .then((image) => {
+        if (image.isEmpty()) return;
+        this.icons.set(key, { url: image.toDataURL(), image });
+        this.scheduleEmit();
+      })
+      .catch(() => {});
+    return null;
+  }
+
+  // For the window's download bar: the latest downloads with their icons.
+  recent(limit = 15) {
+    return this.list()
+      .slice(0, limit)
+      .map((i) => ({ ...i, icon: this.fileIcon(i)?.url || '' }));
+  }
+
+  dragIcon(info) {
+    const own = this.fileIcon(info)?.image;
+    if (own) return own;
+    return nativeImage.createFromPath(path.join(__dirname, '../ui/assets/icon.png')).resize({ width: 32, height: 32 });
   }
 
   progress() {

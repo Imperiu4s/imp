@@ -14,6 +14,8 @@
   const darkMQ = matchMedia('(prefers-color-scheme: dark)');
   function applyTheme() {
     document.documentElement.dataset.theme = darkMQ.matches ? 'dark' : 'light';
+    // The classic design (the default) restyles the pages too.
+    document.documentElement.classList.toggle('classic', settings?.appearance.style !== 'modern');
     if (settings) document.documentElement.style.setProperty('--accent', settings.appearance.accent);
   }
   darkMQ.addEventListener('change', applyTheme);

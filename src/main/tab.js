@@ -340,6 +340,10 @@ class Tab {
     wc.on('did-stop-loading', () => {
       trace.mark('first page loaded');
       this.loading = false;
+      // The address typed or clicked turned into a download (or was stopped):
+      // show the page that is still there.
+      const shown = wc.getURL();
+      if (!this.errorUrl && shown && shown !== this.url) this.url = shown;
       this.updateNav();
       this.changed();
       if (/^https?:/.test(wc.getURL())) {
@@ -428,6 +432,15 @@ class Tab {
     });
 
     wc.on('did-fail-load', (event, code, desc, validatedURL, isMainFrame) => {
+      // A navigation that turned into a download (or was stopped): the address
+      // bar goes back to the page that is still showing, as in other browsers.
+      if (isMainFrame && code === -3 && !this.errorUrl) {
+        const shown = wc.getURL();
+        if (shown && shown !== this.url) {
+          this.url = shown;
+          this.changed();
+        }
+      }
       if (!isMainFrame || code === -3 || code === -27) return;
       const fallback = shields.httpsFallback(wc.id, validatedURL, code);
       if (fallback && !fallback.strict) {

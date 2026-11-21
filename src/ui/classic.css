@@ -1,0 +1,773 @@
+/* Imp's classic design: the browser as it looked in 2018 — grey frame,
+   slanted tabs, a flat toolbar with a white address field ("Secure" in
+   green), the bookmarks bar and the download bar. Applies with
+   <body class="classic">; ui.css is the modern design. */
+
+body.classic {
+  --font: "Segoe UI", system-ui, -apple-system, "SF Pro Text", Ubuntu, Cantarell, sans-serif;
+  --radius: 2px;
+  --accent: #4285f4;
+  --accent-soft: rgba(66, 133, 244, 0.16);
+  --accent-text: #fff;
+  --c-link: #3367d6;
+  /* tab outline pieces (masks), 16 px wide, stretched to the tab's height */
+  --m-fill-l: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 29' preserveAspectRatio='none'%3E%3Cpath d='M0 29C2.6 29 3.7 27.7 4.3 25.9L12 3.3C12.6 1.6 14 .5 16 .5V29Z'/%3E%3C/svg%3E");
+  --m-fill-r: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 29' preserveAspectRatio='none'%3E%3Cpath d='M16 29C13.4 29 12.3 27.7 11.7 25.9L4 3.3C3.4 1.6 2 .5 0 .5V29Z'/%3E%3C/svg%3E");
+  --m-edge-l: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 29' preserveAspectRatio='none'%3E%3Cpath d='M0 28.5C2.6 28.5 3.6 27.4 4.2 25.7L11.9 3.2C12.5 1.5 14 .5 16 .5' fill='none' stroke='%23000'/%3E%3C/svg%3E");
+  --m-edge-r: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 29' preserveAspectRatio='none'%3E%3Cpath d='M16 28.5C13.4 28.5 12.4 27.4 11.8 25.7L4.1 3.2C3.5 1.5 2 .5 0 .5' fill='none' stroke='%23000'/%3E%3C/svg%3E");
+}
+
+body.classic[data-theme="light"] {
+  --frame: #cccccc;
+  --toolbar: #f2f2f2;
+  --tab-active: #f2f2f2;
+  --tab-hover: rgba(0, 0, 0, 0.06);
+  --tab-shadow: none;
+  --text: #202020;
+  --text-2: #5f5f5f;
+  --icon: #5a5a5a;
+  --hover: rgba(0, 0, 0, 0.08);
+  --press: rgba(0, 0, 0, 0.14);
+  --field: #ffffff;
+  --field-hover: #ffffff;
+  --border: rgba(0, 0, 0, 0.16);
+  --page: #ffffff;
+  --info: #f2f2f2;
+  --popup: #ffffff;
+  --popup-shadow: 0 2px 6px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.14);
+  --danger: #c5221f;
+  --ok: #0b8043;
+  --c-tab-bg: rgba(255, 255, 255, 0.28);
+  --c-tab-bg-hover: rgba(255, 255, 255, 0.55);
+  --c-tab-edge: rgba(0, 0, 0, 0.3);
+  --c-tab-text: #333333;
+  --c-strip-line: rgba(0, 0, 0, 0.3);
+  --c-bottom: #b3b3b3;
+  --c-omni-border: #adadad;
+  --c-omni-focus: #4d90fe;
+  --c-chip-sep: rgba(0, 0, 0, 0.16);
+  --c-secure: #0b8043;
+  --c-url-dim: #7a7a7a;
+}
+
+body.classic[data-theme="dark"] {
+  --frame: #2b2c2e;
+  --toolbar: #47484b;
+  --tab-active: #47484b;
+  --tab-hover: rgba(255, 255, 255, 0.06);
+  --tab-shadow: none;
+  --text: #ececec;
+  --text-2: #b4b4b4;
+  --icon: #d6d6d6;
+  --hover: rgba(255, 255, 255, 0.1);
+  --press: rgba(255, 255, 255, 0.16);
+  --field: #2f3033;
+  --field-hover: #2f3033;
+  --border: rgba(255, 255, 255, 0.12);
+  --page: #2b2c2e;
+  --info: #47484b;
+  --popup: #3a3b3e;
+  --popup-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  --danger: #f28b82;
+  --ok: #81c995;
+  --c-tab-bg: rgba(255, 255, 255, 0.07);
+  --c-tab-bg-hover: rgba(255, 255, 255, 0.14);
+  --c-tab-edge: rgba(0, 0, 0, 0.6);
+  --c-tab-text: #e2e2e2;
+  --c-strip-line: rgba(0, 0, 0, 0.55);
+  --c-bottom: #1f2022;
+  --c-omni-border: #6c6d70;
+  --c-omni-focus: #8ab4f8;
+  --c-chip-sep: rgba(255, 255, 255, 0.2);
+  --c-secure: #81c995;
+  --c-url-dim: #a6a6a6;
+  --accent: #8ab4f8;
+  --accent-text: #202124;
+  --c-link: #8ab4f8;
+}
+
+/* Private windows: the dark grey of the 2018 incognito windows. */
+body.classic[data-theme="private"] {
+  --frame: #282b2d;
+  --toolbar: #505050;
+  --tab-active: #505050;
+  --tab-hover: rgba(255, 255, 255, 0.06);
+  --tab-shadow: none;
+  --text: #f1f1f1;
+  --text-2: #c2c2c2;
+  --icon: #e0e0e0;
+  --hover: rgba(255, 255, 255, 0.1);
+  --press: rgba(255, 255, 255, 0.16);
+  --field: #3c3c3c;
+  --field-hover: #3c3c3c;
+  --border: rgba(255, 255, 255, 0.12);
+  --page: #323232;
+  --info: #505050;
+  --popup: #3c3c3c;
+  --popup-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  --danger: #f28b82;
+  --ok: #81c995;
+  --c-tab-bg: rgba(255, 255, 255, 0.08);
+  --c-tab-bg-hover: rgba(255, 255, 255, 0.15);
+  --c-tab-edge: rgba(0, 0, 0, 0.6);
+  --c-tab-text: #ececec;
+  --c-strip-line: rgba(0, 0, 0, 0.55);
+  --c-bottom: #222222;
+  --c-omni-border: #707070;
+  --c-omni-focus: #8ab4f8;
+  --c-chip-sep: rgba(255, 255, 255, 0.2);
+  --c-secure: #81c995;
+  --c-url-dim: #b0b0b0;
+  --accent: #8ab4f8;
+  --accent-text: #202124;
+  --c-link: #8ab4f8;
+}
+
+body.classic {
+  font-size: 12px;
+  -webkit-font-smoothing: auto;
+}
+
+body.classic .icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 2px;
+  transition: none;
+}
+
+body.classic .icon-btn.small {
+  width: 24px;
+  height: 24px;
+  border-radius: 2px;
+}
+
+/* ---------------------------------------------------------------- tab strip */
+
+body.classic #titlebar {
+  height: 36px;
+  align-items: flex-end;
+  /* the line under the tabs; the active tab covers it */
+  box-shadow: inset 0 -1px 0 var(--c-strip-line);
+}
+
+body.classic .tabstrip {
+  align-items: flex-end;
+  padding-left: 4px;
+}
+
+body.classic #tabs-h {
+  align-items: flex-end;
+  gap: 0;
+  padding: 0 16px 0 0;
+}
+
+body.classic #tabs-h .tab {
+  isolation: isolate;
+  height: 28px;
+  width: 240px;
+  min-width: 110px;
+  margin-right: -15px;
+  padding: 0 19px 1px 21px;
+  gap: 6px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--c-tab-text);
+  transition: none;
+}
+
+body.classic #tabs-h .tab::before,
+body.classic #tabs-h .tab::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 -1px 0;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* the tab's face */
+body.classic #tabs-h .tab::before {
+  background: var(--c-tab-bg);
+  -webkit-mask:
+    var(--m-fill-l) left top / 16px 100% no-repeat,
+    linear-gradient(#000, #000) 15px 0 / calc(100% - 30px) 100% no-repeat,
+    var(--m-fill-r) right top / 16px 100% no-repeat;
+}
+
+/* its outline */
+body.classic #tabs-h .tab::after {
+  top: 0;
+  left: 0;
+  background: var(--c-tab-edge);
+  -webkit-mask:
+    var(--m-edge-l) left top / 16px 100% no-repeat,
+    linear-gradient(#000, #000) 15px 0 / calc(100% - 30px) 1px no-repeat,
+    var(--m-edge-r) right top / 16px 100% no-repeat;
+}
+
+body.classic #tabs-h .tab:hover:not(.active)::before {
+  background: var(--c-tab-bg-hover);
+}
+
+body.classic #tabs-h .tab.active::before {
+  background: var(--toolbar);
+}
+
+body.classic #tabs-h .tab.in-split:not(.active)::before {
+  background: color-mix(in srgb, var(--accent) 24%, var(--c-tab-bg-hover));
+}
+
+body.classic #tabs-h .tab.in-split:not(.active) {
+  box-shadow: none;
+}
+
+body.classic #tabs-h .tab.pinned {
+  flex: 0 0 58px;
+  width: 58px;
+  min-width: 58px;
+  padding: 0 0 1px;
+  justify-content: center;
+}
+
+body.classic #tabs-h .tab.dragging {
+  z-index: 2000 !important;
+  opacity: 1;
+  box-shadow: none;
+}
+
+body.classic .tab.attention .tab-title {
+  font-weight: 600;
+}
+
+body.classic #tabs-h .tab.attention::after {
+  top: 0;
+  left: 0;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: var(--c-tab-edge);
+}
+
+body.classic .tab-title {
+  font-size: 12px;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 14px), transparent);
+}
+
+body.classic .tab-icon img {
+  border-radius: 0;
+}
+
+body.classic .tab-close,
+body.classic .tab-audio {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  color: var(--icon);
+}
+
+body.classic .tab-close {
+  opacity: 1;
+}
+
+body.classic .tab-close:hover {
+  background: #db4437;
+  color: #fff;
+}
+
+body.classic .tab-audio:hover {
+  background: var(--press);
+}
+
+body.classic .tab.narrow:not(.active) .tab-close {
+  display: none;
+}
+
+/* the loading throbber */
+body.classic .spinner {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+  border-color: transparent;
+  border-top-color: #4285f4;
+  border-right-color: #4285f4;
+  animation-duration: 0.6s;
+}
+
+body.classic[data-theme="dark"] .spinner,
+body.classic[data-theme="private"] .spinner {
+  border-top-color: #8ab4f8;
+  border-right-color: #8ab4f8;
+}
+
+/* the new-tab button: a small slanted outline after the last tab */
+body.classic .new-tab {
+  width: 36px;
+  height: 20px;
+  margin: 0 0 4px 4px;
+  border-radius: 0;
+  align-self: flex-end;
+  background: none !important;
+}
+
+body.classic .new-tab .ntb path {
+  fill: var(--c-tab-bg);
+  stroke: var(--c-tab-edge);
+}
+
+body.classic .new-tab:hover .ntb path {
+  fill: var(--c-tab-bg-hover);
+}
+
+body.classic .new-tab:active .ntb path {
+  fill: var(--toolbar);
+}
+
+body.classic .tab-scroll {
+  margin-bottom: 2px;
+}
+
+body.classic.inactive .tabs,
+body.classic.inactive .new-tab {
+  opacity: 0.85;
+}
+
+/* ---------------------------------------------------------------- toolbar */
+
+body.classic #toolbar {
+  height: 36px;
+  gap: 0;
+  padding: 0 4px;
+  border-bottom: 1px solid var(--c-bottom);
+}
+
+body.classic #toolbar:has(+ #bookmarks-bar:not(.hidden)) {
+  border-bottom-color: transparent;
+}
+
+body.classic #toolbar > .icon-btn svg,
+body.classic .actions .icon-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+body.classic #btn-back,
+body.classic #btn-forward,
+body.classic #btn-reload,
+body.classic #btn-home {
+  margin-right: 1px;
+}
+
+body.classic #loadbar {
+  display: none;
+}
+
+body.classic #omnibox {
+  position: relative;
+  height: 28px;
+  margin: 0 4px 0 5px;
+  padding: 0 2px 0 3px;
+  gap: 0;
+  border-radius: 2px;
+  background: var(--field);
+  border: 1px solid var(--c-omni-border);
+  box-shadow: none;
+  transition: none;
+  font-size: 14px;
+}
+
+body.classic #omnibox:hover {
+  background: var(--field);
+}
+
+body.classic #omnibox.focused {
+  background: var(--field);
+  border-color: var(--c-omni-focus);
+  box-shadow: none;
+}
+
+body.classic .site-btn {
+  height: 22px;
+  min-width: 24px;
+  padding: 0 4px;
+  gap: 5px;
+  border-radius: 2px;
+  font-size: 14px;
+  color: var(--icon);
+  justify-content: center;
+}
+
+body.classic .site-btn:hover,
+body.classic .site-btn.on {
+  background: var(--hover);
+}
+
+body.classic .site-btn.secure {
+  color: var(--c-secure);
+}
+
+body.classic .site-btn.insecure {
+  color: var(--text-2);
+}
+
+body.classic .site-btn.internal {
+  color: var(--text);
+}
+
+/* the divider after "Secure" / "Not secure" / "Imp" */
+body.classic .site-btn.secure::after,
+body.classic .site-btn.insecure::after,
+body.classic .site-btn.internal::after {
+  content: "";
+  width: 1px;
+  height: 16px;
+  margin-left: 6px;
+  background: var(--c-chip-sep);
+}
+
+body.classic .site-btn.secure,
+body.classic .site-btn.insecure,
+body.classic .site-btn.internal {
+  padding-right: 0;
+  border-radius: 2px 0 0 2px;
+}
+
+body.classic #url {
+  padding: 0 6px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+body.classic #url.viewing {
+  color: transparent;
+}
+
+body.classic #url::placeholder {
+  color: var(--c-url-dim);
+}
+
+body.classic #url::selection {
+  background: #3390ff;
+  color: #fff;
+}
+
+body.classic #url-view {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  overflow: hidden;
+  white-space: pre;
+  pointer-events: none;
+  font-size: 14px;
+  color: var(--c-url-dim);
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 16px), transparent);
+}
+
+body:not(.classic) #url-view {
+  display: none;
+}
+
+#url-view .host {
+  color: var(--text);
+}
+
+#url-view .scheme-ok {
+  color: var(--c-secure);
+}
+
+body.classic .chip {
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--icon);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+body.classic .chip:hover {
+  background: var(--hover);
+}
+
+body.classic #omnibox .icon-btn.small svg {
+  width: 18px;
+  height: 18px;
+}
+
+body.classic #btn-star.starred {
+  color: #4285f4;
+}
+
+body.classic[data-theme="dark"] #btn-star.starred,
+body.classic[data-theme="private"] #btn-star.starred {
+  color: #8ab4f8;
+}
+
+body.classic .actions {
+  gap: 0;
+}
+
+body.classic .shields-btn .badge {
+  right: 0;
+  bottom: 1px;
+  border-radius: 2px;
+  background: #db4437;
+  color: #fff;
+  box-shadow: none;
+}
+
+body.classic .shields-btn.sh-on {
+  color: var(--icon);
+}
+
+body.classic .menu-btn .dot {
+  top: 5px;
+  right: 5px;
+}
+
+body.classic .private-pill {
+  height: 24px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* ---------------------------------------------------------------- bookmarks bar */
+
+body.classic #bookmarks-bar {
+  height: 29px;
+  gap: 0;
+  padding: 0 4px 1px;
+  border-bottom: 1px solid var(--c-bottom);
+}
+
+body.classic .bm {
+  height: 24px;
+  max-width: 175px;
+  gap: 6px;
+  padding: 0 6px;
+  border-radius: 2px;
+  font-size: 12px;
+}
+
+body.classic .bm:hover {
+  background: var(--hover);
+}
+
+body.classic .bm img {
+  border-radius: 0;
+}
+
+body.classic .bm .ic {
+  color: var(--icon);
+}
+
+body.classic .bm-empty {
+  font-size: 12px;
+}
+
+/* ---------------------------------------------------------------- download bar */
+
+body.classic #download-shelf {
+  height: 49px;
+  gap: 4px;
+  padding: 0 4px 0 0;
+  border-top: 1px solid var(--c-bottom);
+}
+
+body.classic .shelf-items {
+  gap: 0;
+  height: 100%;
+}
+
+body.classic .shelf-item {
+  width: 230px;
+  height: 100%;
+  gap: 9px;
+  padding: 0 4px 0 10px;
+  border-radius: 0;
+  border-right: 1px solid var(--border);
+}
+
+body.classic .shelf-item:hover {
+  background: var(--hover);
+}
+
+body.classic .shelf-item[draggable="true"] {
+  cursor: default;
+}
+
+body.classic .shelf-icon {
+  width: 32px;
+  height: 32px;
+  background: none;
+}
+
+/* a progress ring around the file's icon while it downloads */
+body.classic .shelf-item[data-state="progressing"] .shelf-icon {
+  background: conic-gradient(#4285f4 calc(var(--p) * 360deg), var(--border) 0);
+  border-radius: 50%;
+}
+
+body.classic .shelf-icon span {
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--toolbar);
+}
+
+body.classic .shelf-item[data-state="completed"]:not(.gone) .shelf-icon span,
+body.classic .shelf-icon.has-img span {
+  inset: 0;
+  background: none;
+  color: var(--icon);
+}
+
+body.classic .shelf-icon img {
+  width: 32px;
+  height: 32px;
+  display: block;
+}
+
+body.classic .shelf-item[data-state="progressing"] .shelf-icon img {
+  width: 20px;
+  height: 20px;
+}
+
+body.classic .shelf-name {
+  font-size: 12px;
+  color: var(--text);
+}
+
+body.classic .shelf-sub {
+  font-size: 12px;
+}
+
+body.classic #download-shelf .shelf-all {
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 2px;
+  background: none;
+  color: var(--c-link);
+  font-weight: 400;
+  font-size: 13px;
+}
+
+body.classic #download-shelf .shelf-all:hover {
+  background: var(--hover);
+}
+
+/* ---------------------------------------------------------------- info & find bars */
+
+body.classic #infobar,
+body.classic #findbar {
+  height: 38px;
+  background: var(--info);
+  border-bottom: 1px solid var(--c-bottom);
+}
+
+body.classic .btn {
+  height: 28px;
+  padding: 0 14px;
+  border-radius: 2px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+body.classic .btn.primary {
+  background: #4285f4;
+  color: #fff;
+}
+
+body.classic[data-theme="dark"] .btn.primary,
+body.classic[data-theme="private"] .btn.primary {
+  background: #8ab4f8;
+  color: #202124;
+}
+
+body.classic .btn.ghost {
+  border: 1px solid var(--border);
+  background: var(--field);
+}
+
+body.classic #find-input {
+  height: 26px;
+  border-radius: 2px;
+  border: 1px solid var(--c-omni-border);
+  background: var(--field);
+}
+
+body.classic #find-input:focus {
+  border-color: var(--c-omni-focus);
+}
+
+/* ---------------------------------------------------------------- vertical tabs, split view */
+
+body.classic .tabs.vertical .tab {
+  border-radius: 2px;
+}
+
+body.classic .tabs.vertical .tab.active {
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+body.classic .sidebar-new {
+  border-radius: 2px;
+}
+
+body.classic .split-ring {
+  border-radius: 0;
+}
+
+/* ---------------------------------------------------------------- popups (overlay) */
+
+body.classic .popup {
+  border-radius: 2px;
+  animation: none;
+}
+
+body.classic .popup.suggest {
+  border-radius: 0 0 2px 2px;
+  padding: 4px 0;
+}
+
+body.classic .row {
+  border-radius: 0;
+  min-height: 30px;
+  padding: 0 16px;
+}
+
+body.classic .section {
+  padding: 4px 0;
+}
+
+body.classic .sug {
+  height: 30px;
+  border-radius: 0;
+  padding: 0 14px;
+}
+
+body.classic .sug.selected {
+  background: var(--hover);
+}
+
+body.classic .sug .sug-sub {
+  color: var(--c-link);
+}
+
+body.classic .sug.kind-search .sug-sub,
+body.classic .sug.kind-history .sug-sub:empty {
+  color: var(--text-2);
+}
+
+body.classic .bubble {
+  border-radius: 2px;
+}
+
+body.classic .switch {
+  border-radius: 8px;
+}

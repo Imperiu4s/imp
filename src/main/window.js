@@ -28,6 +28,13 @@ const PALETTES = {
   dark: { frame: '#14161C', toolbar: '#1F222A', symbol: '#E6E8EE', page: '#16181E' },
   private: { frame: '#181229', toolbar: '#231A3D', symbol: '#ECE6FF', page: '#15111F' },
 };
+// The classic design: the grey frame and toolbar of the 2018 browsers.
+const CLASSIC_PALETTES = {
+  light: { frame: '#CCCCCC', toolbar: '#F2F2F2', symbol: '#202020', page: '#FFFFFF' },
+  dark: { frame: '#2B2C2E', toolbar: '#47484B', symbol: '#E8E8E8', page: '#2B2C2E' },
+  private: { frame: '#282B2D', toolbar: '#505050', symbol: '#E8E8E8', page: '#323232' },
+};
+const isClassic = () => settings.get('appearance.style') !== 'modern';
 
 let popupSeq = 0;
 
@@ -80,7 +87,7 @@ class BrowserWin {
     this.webContents = this.win.webContents;
     this.id = this.win.id;
     this.wireWindow(opts);
-    this.webContents.loadFile(UI_HTML, { query: { private: this.isPrivate ? '1' : '0', platform: process.platform } });
+    this.webContents.loadFile(UI_HTML, { query: this.uiQuery() });
     // Show the window right away, in the theme's colours, as Chrome does; the
     // toolbar and tabs appear in it a moment later, once the interface has loaded.
     this.reveal();
@@ -99,18 +106,32 @@ class BrowserWin {
   }
 
   palette() {
-    if (this.isPrivate) return PALETTES.private;
-    return nativeTheme.shouldUseDarkColors ? PALETTES.dark : PALETTES.light;
+    const set = isClassic() ? CLASSIC_PALETTES : PALETTES;
+    if (this.isPrivate) return set.private;
+    return nativeTheme.shouldUseDarkColors ? set.dark : set.light;
   }
 
   pageBackground() {
     return this.palette().page;
   }
 
+  // The design is known before the interface loads (no flash of the other one).
+  uiQuery() {
+    return { private: this.isPrivate ? '1' : '0', platform: process.platform, style: isClassic() ? 'classic' : 'modern' };
+  }
+
+  // Switching designs: the interface starts over in the new one.
+  reloadUi() {
+    if (this.win.isDestroyed()) return;
+    this.refreshTheme();
+    this.webContents.loadFile(UI_HTML, { query: this.uiQuery() });
+  }
+
   titleBarOverlay() {
     const p = this.palette();
     const vertical = settings.get('appearance.verticalTabs');
-    return { color: vertical ? p.toolbar : p.frame, symbolColor: p.symbol, height: vertical ? 44 : 40 };
+    const height = isClassic() ? 36 : vertical ? 44 : 40;
+    return { color: vertical ? p.toolbar : p.frame, symbolColor: p.symbol, height };
   }
 
   refreshTheme() {

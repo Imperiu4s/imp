@@ -12,17 +12,31 @@
 
   <button id="customize" class="corner-btn" data-icon="settings" data-size="18" data-i18n-title="ntp.customize"></button>
 
+  <!-- classic design: links at the top right, as on the 2018 search pages -->
+  <nav class="classic-top">
+    <a href="imp://history/" data-i18n="menu.history"></a>
+    <a href="imp://bookmarks/" data-i18n="menu.bookmarks"></a>
+  </nav>
+
   <main class="ntp">
     <div id="clock" class="clock">
       <div id="time" class="time"></div>
       <div id="date" class="date"></div>
     </div>
 
+    <div class="classic-logo" aria-hidden="true"><img src="/assets/icon.svg" alt=""><span>Imp</span></div>
+
     <form id="search" class="ntp-search">
       <span class="logo"><img src="/assets/icon.svg" width="26" height="26" alt=""></span>
       <input id="q" type="text" autocomplete="off" spellcheck="false">
       <button type="submit" class="go" data-icon="search" data-size="18" aria-label="search"></button>
     </form>
+
+    <div class="classic-buttons">
+      <button type="submit" form="search" data-i18n="ntp.searchBtn"></button>
+      <button type="button" id="lucky" data-i18n="ntp.lucky"></button>
+    </div>
+    <p class="classic-lang"><span data-i18n="ntp.offeredIn"></span> <a href="#" id="lang-switch"></a></p>
 
     <section id="private-info" class="private-info" hidden>
       <div class="pi-icon" data-icon="incognito" data-size="26"></div>
@@ -47,6 +61,19 @@
       </div>
     </section>
   </main>
+
+  <footer class="classic-foot">
+    <div class="cf-top" id="cf-stats"></div>
+    <div class="cf-bottom">
+      <div>
+        <a href="imp://settings/" data-i18n="menu.settings"></a>
+        <a href="imp://history/" data-i18n="menu.history"></a>
+        <a href="imp://bookmarks/" data-i18n="menu.bookmarks"></a>
+        <a href="imp://downloads/" data-i18n="menu.downloads"></a>
+      </div>
+      <div><a href="#" id="cf-customize" data-i18n="ntp.customize"></a></div>
+    </div>
+  </footer>
 
   <aside id="panel" class="panel" hidden>
     <div class="panel-head">

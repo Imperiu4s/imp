@@ -451,3 +451,337 @@ body.photo .panel {
 .bg-grid button.on {
   border-color: var(--accent);
 }
+
+/* ---------------------------------------------------------------- classic design
+   The 2018 search homepage: white page, big logo, a square search box with
+   a soft shadow, two grey buttons, the other language, a grey footer. */
+
+.classic-top,
+.classic-logo,
+.classic-buttons,
+.classic-lang,
+.classic-foot {
+  display: none;
+}
+
+:root.classic body {
+  --c-text: #222222;
+  --c-dim: #70757a;
+  --c-link: #1a0dab;
+  --c-box: #ffffff;
+  --c-btn: #f2f2f2;
+  --c-btn-text: #757575;
+  --c-foot: #f2f2f2;
+  --c-foot-line: #e4e4e4;
+  font-family: arial, "Segoe UI", sans-serif;
+  background: #ffffff;
+  color: var(--c-text);
+}
+
+:root.classic[data-theme="dark"] body {
+  --c-text: #e8eaed;
+  --c-dim: #9aa0a6;
+  --c-link: #8ab4f8;
+  --c-box: #303134;
+  --c-btn: #303134;
+  --c-btn-text: #e8eaed;
+  --c-foot: #171717;
+  --c-foot-line: #3c4043;
+  background: #202124;
+}
+
+:root.classic body.private {
+  --c-text: #f1f1f1;
+  --c-dim: #b8b8b8;
+  --c-link: #8ab4f8;
+  --c-box: #3c3c3c;
+  --c-btn: #3c3c3c;
+  --c-btn-text: #f1f1f1;
+  --c-foot: #2a2a2a;
+  --c-foot-line: #444444;
+  background: #323232;
+}
+
+:root.classic .bg {
+  display: none;
+}
+
+:root.classic body.photo .bg {
+  display: block;
+}
+
+:root.classic .clock,
+:root.classic .stats,
+:root.classic .corner-btn {
+  display: none !important;
+}
+
+:root.classic .classic-top {
+  position: fixed;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 26px;
+  font-size: 13px;
+}
+
+:root.classic .classic-top a,
+:root.classic .classic-foot a {
+  color: var(--c-text);
+  opacity: 0.87;
+}
+
+:root.classic .ntp {
+  justify-content: flex-start;
+  gap: 0;
+  padding: max(70px, calc(24vh - 60px)) 20px 140px;
+}
+
+:root.classic .classic-logo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+  user-select: none;
+}
+
+:root.classic .classic-logo img {
+  width: 92px;
+  height: 92px;
+}
+
+:root.classic .classic-logo span {
+  font: 500 82px/1 "Segoe UI", arial, sans-serif;
+  letter-spacing: -2px;
+  color: #2f80ed;
+  background: linear-gradient(135deg, #1e3fae 0%, #2f80ed 55%, #3cd3f7 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+:root.classic body.private .classic-logo {
+  display: none;
+}
+
+:root.classic .ntp-search {
+  width: min(584px, 100%);
+  height: 44px;
+  padding: 0 8px 0 16px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--c-box);
+  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s;
+}
+
+:root.classic .ntp-search:hover,
+:root.classic .ntp-search:focus-within {
+  border: 0;
+  box-shadow: 0 3px 8px 0 rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+:root.classic[data-theme="dark"] .ntp-search,
+:root.classic body.private .ntp-search {
+  box-shadow: none;
+}
+
+:root.classic[data-theme="dark"] .ntp-search:hover,
+:root.classic[data-theme="dark"] .ntp-search:focus-within,
+:root.classic body.private .ntp-search:hover,
+:root.classic body.private .ntp-search:focus-within {
+  box-shadow: 0 1px 6px 0 rgba(0, 0, 0, 0.6);
+}
+
+:root.classic .ntp-search .logo {
+  display: none;
+}
+
+:root.classic .ntp-search input {
+  font: 16px arial, sans-serif;
+  color: var(--c-text);
+}
+
+:root.classic .ntp-search input::placeholder {
+  color: var(--c-dim);
+}
+
+:root.classic .ntp-search .go {
+  width: 36px;
+  height: 36px;
+  border-radius: 0;
+  background: transparent;
+  color: #4285f4;
+}
+
+:root.classic .classic-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 26px;
+}
+
+:root.classic .classic-buttons button {
+  height: 36px;
+  min-width: 54px;
+  padding: 0 16px;
+  border: 1px solid var(--c-btn);
+  border-radius: 2px;
+  background: var(--c-btn);
+  color: var(--c-btn-text);
+  font: bold 13px arial, sans-serif;
+  cursor: default;
+}
+
+:root.classic .classic-buttons button:hover {
+  border-color: #c6c6c6;
+  background: #f8f8f8;
+  color: #222222;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+:root.classic[data-theme="dark"] .classic-buttons button:hover,
+:root.classic body.private .classic-buttons button:hover {
+  border-color: #5f6368;
+  background: var(--c-btn);
+  color: var(--c-text);
+}
+
+:root.classic .classic-buttons button:focus-visible {
+  outline: none;
+  border-color: #4d90fe;
+}
+
+:root.classic .classic-lang {
+  display: block;
+  margin: 26px 0 34px;
+  font-size: 13px;
+  color: var(--c-text);
+}
+
+:root.classic .classic-lang a {
+  color: var(--c-link);
+}
+
+:root.classic body.private .classic-lang {
+  display: none;
+}
+
+:root.classic .private-info {
+  margin: 0 0 28px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--c-text);
+}
+
+:root.classic .private-info .pi-icon {
+  background: none;
+  color: var(--c-text);
+  width: 64px;
+  height: 64px;
+}
+
+:root.classic .private-info p {
+  color: var(--c-dim);
+}
+
+/* shortcuts: plain tiles under the search box */
+:root.classic .tiles {
+  gap: 4px;
+  width: min(584px, 100%);
+  grid-template-columns: repeat(auto-fill, 112px);
+}
+
+:root.classic .tile {
+  height: 112px;
+  border-radius: 4px;
+  gap: 8px;
+  color: var(--c-text);
+}
+
+:root.classic .tile:hover {
+  background: rgba(0, 0, 0, 0.05);
+  backdrop-filter: none;
+}
+
+:root.classic[data-theme="dark"] .tile:hover,
+:root.classic body.private .tile:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+:root.classic .tile .tile-ic {
+  border-radius: 50%;
+  background: #f1f3f4;
+  box-shadow: none;
+}
+
+:root.classic[data-theme="dark"] .tile .tile-ic,
+:root.classic body.private .tile .tile-ic {
+  background: #3c4043;
+}
+
+:root.classic .tile .tile-ic img {
+  width: 24px;
+  height: 24px;
+}
+
+:root.classic .tile .tile-name {
+  font-size: 13px;
+}
+
+:root.classic .tile .tile-x {
+  border-radius: 50%;
+  box-shadow: none;
+  background: transparent;
+}
+
+:root.classic .tile.add .tile-ic {
+  border: 0;
+  background: #f1f3f4;
+}
+
+:root.classic[data-theme="dark"] .tile.add .tile-ic,
+:root.classic body.private .tile.add .tile-ic {
+  background: #3c4043;
+}
+
+:root.classic .classic-foot {
+  display: block;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--c-foot);
+  font-size: 14px;
+}
+
+:root.classic .cf-top {
+  padding: 13px 30px;
+  border-bottom: 1px solid var(--c-foot-line);
+  color: var(--c-dim);
+}
+
+:root.classic .cf-bottom {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 13px 30px;
+}
+
+:root.classic .cf-bottom div {
+  display: flex;
+  gap: 27px;
+}
+
+:root.classic .cf-bottom a {
+  color: var(--c-dim);
+  opacity: 1;
+}
+
+:root.classic .panel {
+  border-radius: 2px;
+}

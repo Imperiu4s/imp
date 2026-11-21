@@ -29,6 +29,10 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
   document.body.classList.toggle('mac', platform === 'darwin');
+  // The design comes with the page address (window.js uiQuery), so the first
+  // paint is already the right one; switching designs reloads this page.
+  const classicStyle = params.get('style') !== 'modern';
+  document.body.classList.toggle('classic', classicStyle);
 
   // ------------------------------------------------------------------ theme & settings
   const darkMQ = matchMedia('(prefers-color-scheme: dark)');
@@ -68,7 +72,9 @@
   setIcon('#btn-downloads', 'download');
   setIcon('#btn-menu', 'more', 18);
   setIcon('#btn-sidebar', 'sidebar');
-  setIcon('#new-tab-h', 'plus', 17);
+  // Classic: the slanted outline after the last tab.
+  if (classicStyle) $('#new-tab-h').innerHTML = '<svg class="ntb" width="36" height="20" viewBox="0 0 36 20" aria-hidden="true"><path d="M2.6 1.5h23.3c.9 0 1.6.5 2 1.3l6.2 14.5c.3.6-.2 1.2-.9 1.2H9.9c-.9 0-1.6-.5-2-1.3L1.7 2.7c-.3-.6.2-1.2.9-1.2z"/></svg>';
+  else setIcon('#new-tab-h', 'plus', 17);
   $('#new-tab-v .ic-wrap').innerHTML = icon('plus', 16);
   $('#find-prev').innerHTML = icon('chevronUp', 15);
   $('#find-next').innerHTML = icon('chevronDown', 15);
@@ -219,12 +225,25 @@
       if (!editingUrl()) userTyped = false;
       tabEls.get(state.activeId)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     }
+    stackTabs();
     updateNarrow();
     updateTabScroll();
     updateToolbar();
     renderInfobar();
     updateBookmarksBarVisibility();
     renderSplit();
+  }
+
+  // Classic tabs overlap at their slanted edges: the active one is on top, then
+  // the ones nearest to it.
+  function stackTabs() {
+    if (!classicStyle || settings.appearance.verticalTabs) return;
+    const active = state.tabs.findIndex((x) => x.id === state.activeId);
+    state.tabs.forEach((tab, i) => {
+      const el = tabEls.get(tab.id);
+      const z = String(i === active ? 1000 : 500 - Math.abs(i - Math.max(0, active)));
+      if (el && el.style.zIndex !== z) el.style.zIndex = z;
+    });
   }
 
   function updateNarrow() {
@@ -369,7 +388,7 @@
     try {
       const u = new URL(url);
       let s = url;
-      if (u.protocol === 'https:') s = url.slice(8);
+      if (classicStyle ? u.protocol === 'http:' : u.protocol === 'https:') s = url.slice(u.protocol.length + 2);
       if (u.pathname === '/' && !u.search && !u.hash) s = s.replace(/\/$/, '');
       try {
         s = decodeURI(s);
@@ -388,6 +407,31 @@
       return tab.url;
     }
   }
+
+  // Classic: the address in colour while it isn't being edited, as in the 2018
+  // browsers: "https" green on secure pages, the host dark, the rest grey.
+  const urlView = $('#url-view');
+  function renderUrlView() {
+    if (!classicStyle) return;
+    const value = urlInput.value;
+    const show = !!value && !userTyped && !editingUrl();
+    urlInput.classList.toggle('viewing', show);
+    urlView.hidden = !show;
+    if (!show) return;
+    const kind = $('#site-btn').dataset.kind;
+    if (urlView.dataset.v !== value || urlView.dataset.kind !== kind) {
+      urlView.dataset.v = value;
+      urlView.dataset.kind = kind;
+      const m = /^([a-z][a-z0-9+.-]*)(:\/\/)([^/?#]*)(.*)$/i.exec(value) || ['', '', '', value, ''];
+      const scheme = m[1] ? `<span class="${m[1] === 'https' && kind === 'secure' ? 'scheme-ok' : 'dim'}">${esc(m[1])}</span><span class="dim">${esc(m[2])}</span>` : '';
+      urlView.innerHTML = `${scheme}<span class="host">${esc(m[3])}</span><span class="dim">${esc(m[4])}</span>`;
+    }
+    urlView.style.left = `${urlInput.offsetLeft}px`;
+    urlView.style.width = `${urlInput.offsetWidth}px`;
+  }
+
+  window.addEventListener('focus', () => renderUrlView());
+  window.addEventListener('blur', () => renderUrlView());
 
   function updateToolbar() {
     const tab = activeTab();
@@ -427,16 +471,28 @@
       site.dataset.kind = siteKind;
       site.dataset.lang = lang;
       site.className = `site-btn ${siteKind}`;
-      const map = {
-        search: icon('search', 15),
-        internal: `<img src="assets/icon.svg" width="15" height="15" alt="">`,
-        secure: icon('lock', 15),
-        insecure: `${icon('warning', 15)}<span>${esc(t('site.notSecure'))}</span>`,
-        file: icon('file', 15),
-        other: icon('info', 15),
-      };
+      const map = classicStyle
+        ? {
+            // As in the 2018 browsers: a green padlock and "Secure", then a divider.
+            search: icon('search', 16),
+            internal: `<img src="assets/icon.svg" width="16" height="16" alt=""><span>Imp</span>`,
+            secure: `${icon('lock', 15)}<span>${esc(t('site.secureChip'))}</span>`,
+            insecure: `${icon('info', 16)}<span>${esc(t('site.notSecure'))}</span>`,
+            file: icon('file', 16),
+            other: icon('info', 16),
+          }
+        : {
+            search: icon('search', 15),
+            internal: `<img src="assets/icon.svg" width="15" height="15" alt="">`,
+            secure: icon('lock', 15),
+            insecure: `${icon('warning', 15)}<span>${esc(t('site.notSecure'))}</span>`,
+            file: icon('file', 15),
+            other: icon('info', 15),
+          };
       site.innerHTML = map[siteKind];
     }
+
+    renderUrlView();
 
     const star = $('#btn-star');
     const canStar = !isPrivate && /^(https?|file):/.test(url);
@@ -567,6 +623,7 @@
       urlInput.value = fullUrl(activeTab());
       urlInput.select();
     }
+    renderUrlView();
     // Open a connection to the search engine now, so the search starts instantly
     // (again after a while: idle connections get closed).
     if (Date.now() - warmedUp > 60_000) {
@@ -586,6 +643,7 @@
       urlInput.value = displayUrl(activeTab()?.url);
       urlInput.setSelectionRange(0, 0);
       urlInput.scrollLeft = 0;
+      renderUrlView();
     }, 150);
   });
   urlInput.addEventListener('beforeinput', (e) => {
@@ -593,6 +651,7 @@
   });
   urlInput.addEventListener('input', () => {
     userTyped = true;
+    renderUrlView();
     onOmniboxInput();
   });
 
@@ -1167,8 +1226,12 @@
         const ext = (d.filename.includes('.') ? d.filename.split('.').pop() : '').slice(0, 4);
         const p = d.state === 'progressing' && d.total ? d.received / d.total : -1;
         const cls = d.exists === false || d.state === 'cancelled' || d.state === 'interrupted' ? 'gone' : '';
-        return `<div class="shelf-item ${cls}" data-id="${esc(d.id)}" data-state="${esc(d.state)}" title="${esc(d.filename)}">
-          <div class="shelf-icon ${p < 0 && d.state === 'progressing' ? 'indeterminate' : ''}" style="--p:${Math.max(0, p)}"><span>${ext ? esc(ext) : icon('file', 14)}</span></div>
+        // Finished files can be dragged off the bar into a page (or anywhere else).
+        const canDrag = d.state === 'completed' && d.exists !== false;
+        const img = classicStyle && d.icon ? `<img src="${esc(d.icon)}" alt="" draggable="false">` : '';
+        const label = img || (ext ? esc(ext) : icon('file', 14));
+        return `<div class="shelf-item ${cls}" data-id="${esc(d.id)}" data-state="${esc(d.state)}" title="${esc(d.filename)}" draggable="${canDrag}">
+          <div class="shelf-icon ${p < 0 && d.state === 'progressing' ? 'indeterminate' : ''} ${img ? 'has-img' : ''}" style="--p:${Math.max(0, p)}"><span>${label}</span></div>
           <div class="shelf-meta"><div class="shelf-name">${esc(d.filename)}</div><div class="shelf-sub">${esc(shelfStatus(d))}</div></div>
           <button class="icon-btn small shelf-more" title="${esc(t('dl.options'))}">${icon('chevronUp', 14)}</button></div>`;
       })
@@ -1195,6 +1258,12 @@
     if (!el) return;
     if (e.target.closest('.shelf-more')) return api.send('download:menu', el.dataset.id);
     if (el.dataset.state === 'completed' && !el.classList.contains('gone')) api.send('download:op', 'open', el.dataset.id);
+  });
+  // The drag itself is the system's (main process: startDrag), carrying the file.
+  shelf.querySelector('.shelf-items').addEventListener('dragstart', (e) => {
+    e.preventDefault();
+    const el = e.target.closest('.shelf-item');
+    if (el?.getAttribute('draggable') === 'true') api.send('download:drag', el.dataset.id);
   });
   shelf.querySelector('.shelf-items').addEventListener('contextmenu', (e) => {
     const el = e.target.closest('.shelf-item');

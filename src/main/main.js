@@ -179,6 +179,7 @@ function start() {
       manager.notifyPages('settings', settings.data);
       if (key === 'appearance.theme' || key === '*') nativeTheme.themeSource = settings.get('appearance.theme');
       if (key === 'appearance.theme' || key === 'appearance.verticalTabs' || key === '*') manager.refreshTheme();
+      if (key === 'appearance.style' || key === '*') for (const w of manager.windows) w.reloadUi();
       if (key.startsWith('privacy.dns') || key === '*') configureDns();
       if (key === 'appearance.language' || key === '*') manager.broadcast('state:lang', lang());
       if (key === 'shields.allowlist') for (const w of manager.windows) w.sendTabs();

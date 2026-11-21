@@ -62,12 +62,21 @@
       section(
         'appearance',
         `<div class="group">
+          ${segmented(
+            'appearance.style',
+            'set.style',
+            [
+              ['classic', 'set.style.classic', 'window'],
+              ['modern', 'set.style.modern', 'sparkle'],
+            ],
+            'set.style.desc',
+          )}
           ${segmented('appearance.theme', 'set.theme', [
             ['system', 'set.theme.system', 'monitor'],
             ['light', 'set.theme.light', 'sun'],
             ['dark', 'set.theme.dark', 'moon'],
           ])}
-          <div class="item">${textBlock('set.accent')}<div class="swatches">${ACCENTS.map(
+          <div class="item">${textBlock('set.accent', get('appearance.style') === 'modern' ? undefined : 'set.accent.classicNote')}<div class="swatches">${ACCENTS.map(
             (c) => `<button class="swatch ${get('appearance.accent').toLowerCase() === c.toLowerCase() ? 'on' : ''}" style="background:${c}" data-accent="${c}" title="${c}"></button>`,
           ).join('')}<label class="swatch custom" title="${esc(t('set.accentCustom'))}"><input type="color" id="accent-custom" value="${esc(get('appearance.accent'))}"></label></div></div>
           ${segmented(

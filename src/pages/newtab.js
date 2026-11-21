@@ -22,6 +22,34 @@
     const engine = window.ImpEngines[window.Page.settings.search.engine] || window.ImpEngines.duckduckgo;
     q.placeholder = t('ntp.searchPlaceholder', { engine: engine.name });
   }
+  // "I'm Feeling Lucky": straight to the first result, where the engine can do it.
+  const LUCKY = {
+    google: 'https://www.google.com/search?btnI=1&q=%s',
+    duckduckgo: 'https://duckduckgo.com/?q=%5C%s',
+  };
+  $('#lucky').addEventListener('click', () => {
+    const text = q.value.trim();
+    if (!text) return q.focus();
+    const id = window.Page.settings.search.engine;
+    const engine = window.ImpEngines[id] || window.ImpEngines.duckduckgo;
+    location.href = (LUCKY[id] || engine.search).replace('%s', encodeURIComponent(text));
+  });
+  // The other language, one click away (as the old search pages offered).
+  function renderLangSwitch() {
+    const other = window.Page.lang === 'hu' ? ['en', 'English'] : ['hu', 'Magyar'];
+    const a = $('#lang-switch');
+    a.textContent = other[1];
+    a.dataset.lang = other[0];
+  }
+  $('#lang-switch').addEventListener('click', (e) => {
+    e.preventDefault();
+    call('settings.set', 'appearance.language', e.currentTarget.dataset.lang);
+  });
+  $('#cf-customize').addEventListener('click', (e) => {
+    e.preventDefault();
+    $('#panel').hidden = !$('#panel').hidden;
+  });
+
   $('#search').addEventListener('submit', (e) => {
     e.preventDefault();
     const text = q.value.trim();
@@ -121,6 +149,9 @@
     // Estimate used by most privacy browsers: ~50 ms saved per blocked request.
     $('#st-time').textContent = fmtDuration(st.blocked * 50);
     $('#st-https').textContent = st.upgraded.toLocaleString(window.Page.lang);
+    $('#cf-stats').textContent = data.private
+      ? t('ntp.privateTitle')
+      : `Imp Shields · ${t('ntp.blocked')}: ${st.blocked.toLocaleString(window.Page.lang)} · ${t('ntp.timeSaved')}: ${fmtDuration(st.blocked * 50)}`;
   }
 
   // ---- background & visibility ------------------------------------------------------
@@ -143,6 +174,7 @@
     });
     document.querySelectorAll('#bg-grid button').forEach((b) => b.classList.toggle('on', b.dataset.bg === s.background));
     placeholder();
+    renderLangSwitch();
   }
 
   $('#bg-grid').innerHTML = BACKGROUNDS.map((b) => `<button data-bg="${b}"><div class="bg ${b}"></div><span data-i18n="ntp.bg.${b}"></span></button>`).join('');
