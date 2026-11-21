@@ -3,8 +3,9 @@
 // blocking and Global Privacy Control — all in one webRequest pipeline
 // (Electron only allows one listener per webRequest event).
 const fs = require('node:fs');
+const path = require('node:path');
 const crypto = require('node:crypto');
-const { ipcMain, webContents } = require('electron');
+const { ipcMain, webContents, utilityProcess } = require('electron');
 const { parse: parseHost, getDomain } = require('tldts');
 const settings = require('./settings');
 const compat = require('./compat');
@@ -14,7 +15,7 @@ const trace = require('./trace');
 const { JsonFile, dataPath } = require('./store');
 
 const PRELOAD_PATH = require.resolve('@ghostery/adblocker-electron-preload');
-const DAY = 24 * 60 * 60 * 1000;
+const HOUR = 60 * 60 * 1000;
 
 let ghostery = null;
 const lib = () => (ghostery ||= require('@ghostery/adblocker-electron'));
@@ -56,26 +57,101 @@ function setSiteEnabled(host, enabled) {
 }
 
 // ---- filter engine ---------------------------------------------------------
+//
+// The filters come from Ghostery's CDN as ready-made engines, rebuilt there every
+// day from uBlock Origin's, EasyList's and Ghostery's own lists. YouTube changes
+// its ad-blocker detection almost daily and the lists follow, so Imp checks for
+// new ones every few hours and downloads only when something changed. Merging
+// the parts happens in a utility process, off the main thread.
+
+const CDN = 'https://cdn.ghostery.com/adblocker/configs';
+const SOURCES = {
+  standard: ['dnr-ads', 'dnr-tracking', 'dnr-fixes'],
+  aggressive: ['dnr-ads', 'dnr-tracking', 'dnr-annoyances', 'dnr-fixes'],
+};
+const CHECK_EVERY = 6 * HOUR;
+const listState = new JsonFile('shields-lists.json', {}); // mode -> { id, checked }
 
 let engineMode = null;
-let engineAge = Infinity;
+let engineId = null; // which CDN build the current engine is
 
 // Loads the ad-block library and the cached filter engine synchronously. Runs
 // before the first window is created, so no page request goes unfiltered.
 function preloadEngine() {
   const mode = settings.get('shields.adblock');
   if (mode === 'off') return;
-  const file = dataPath(`shields-${mode}.bin`);
   try {
-    const buf = fs.readFileSync(file);
-    engineAge = Date.now() - fs.statSync(file).mtimeMs;
+    const buf = fs.readFileSync(dataPath(`shields-${mode}.bin`));
     engine = lib().ElectronBlocker.deserialize(new Uint8Array(buf));
     scriptletCache.clear();
     engineMode = mode;
+    engineId = listState.data[mode]?.id || null;
     trace.mark('ad-block engine loaded from cache');
   } catch {
-    engineAge = Infinity;
+    // No cache (or one from another library version): loadEngine downloads.
   }
+}
+
+async function download(url) {
+  const res = await netSession.fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+  return Buffer.from(await res.arrayBuffer());
+}
+
+const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
+
+function runBuilder(job) {
+  return new Promise((resolve, reject) => {
+    const child = utilityProcess.fork(path.join(__dirname, 'shields-builder.js'), [], { serviceName: 'Imp Shields', stdio: 'ignore' });
+    const timer = setTimeout(() => {
+      child.kill();
+      reject(new Error('filter builder timed out'));
+    }, 120_000);
+    child.once('spawn', () => child.postMessage(job));
+    child.once('message', (msg) => {
+      clearTimeout(timer);
+      child.kill();
+      if (msg && msg.bytes) resolve(Buffer.from(msg.bytes));
+      else reject(new Error((msg && msg.error) || 'filter builder failed'));
+    });
+    child.once('exit', (code) => {
+      clearTimeout(timer);
+      reject(new Error(`filter builder exited (${code})`));
+    });
+  });
+}
+
+// Fetches the CDN's description of each part; downloads and merges them unless
+// they are the ones the current engine was built from. Returns { id, bytes },
+// or { id } when nothing changed.
+async function buildFromCdn(mode, currentId) {
+  const version = String(lib().ENGINE_VERSION);
+  const configs = await Promise.all(SOURCES[mode].map(async (name) => JSON.parse((await download(`${CDN}/${name}/allowed-lists.json`)).toString('utf8'))));
+  const prebuilt = configs.every((c) => c.engines?.[version]?.url);
+  const id = prebuilt
+    ? `engine ${version}: ${configs.map((c) => c.engines[version].checksum).join(',')}`
+    : `lists: ${configs.map((c) => Object.values(c.lists || {}).map((l) => l.checksum).join('+')).join(',')}`;
+  if (id === currentId) return { id };
+  let job;
+  if (prebuilt) {
+    const engines = await Promise.all(
+      configs.map(async (c) => {
+        const { url, checksum } = c.engines[version];
+        const bytes = await download(url);
+        if (sha256(bytes) !== checksum) throw new Error(`checksum mismatch for ${url}`);
+        return bytes;
+      }),
+    );
+    job = { engines };
+  } else {
+    // A newer engine format than this library knows: build from the lists.
+    const urls = [...new Set(configs.flatMap((c) => Object.values(c.lists || {}).map((l) => l.url)))];
+    const lists = await Promise.all(urls.map(async (url) => (await download(url)).toString('utf8')));
+    const res = configs.find((c) => c.resourcesJson?.url)?.resourcesJson;
+    const resources = res ? (await download(res.url)).toString('utf8') : undefined;
+    job = { lists, resources, resourcesChecksum: res?.checksum };
+  }
+  return { id, bytes: await runBuilder(job) };
 }
 
 async function loadEngine() {
@@ -88,22 +164,59 @@ async function loadEngine() {
     return;
   }
   if (engineMode !== mode) preloadEngine();
-  if (engine && engineMode === mode && engineAge < 3 * DAY) return;
+  const have = engine && engineMode === mode;
+  const state = listState.data[mode] || {};
+  if (have && Date.now() - (state.checked || 0) < CHECK_EVERY) return;
+  // Filters from before Imp 1.0.9 (or the fallback lists) are being replaced.
+  const replacesOld = have && engineId === null;
+  try {
+    const built = await buildFromCdn(mode, have ? engineId : null);
+    if (settings.get('shields.adblock') !== mode) return;
+    if (built.bytes) {
+      const fresh = lib().ElectronBlocker.deserialize(new Uint8Array(built.bytes));
+      fs.writeFileSync(dataPath(`shields-${mode}.bin`), built.bytes);
+      engine = fresh;
+      scriptletCache.clear();
+      engineMode = mode;
+      engineId = built.id;
+      trace.mark('ad-block filters updated');
+      if (replacesOld) reloadYouTube();
+    }
+    listState.data[mode] = { id: built.id, checked: Date.now() };
+    listState.save();
+  } catch (err) {
+    console.warn('[shields] filter list update failed:', err.message);
+    if (!engine) await loadFallback(mode);
+    retryTimer = setTimeout(reloadEngine, engine ? HOUR : 60_000);
+  }
+}
+
+// A YouTube video opened with outdated filters (say, the restored session right
+// after updating Imp) may already show YouTube's ad blocker wall: load it again
+// with the fresh ones.
+function reloadYouTube() {
+  for (const wc of webContents.getAllWebContents()) {
+    if (wc.isDestroyed()) continue;
+    if (/^https:\/\/(www\.|m\.)?youtube\.com\/(watch\?|shorts\/|embed\/)/.test(wc.getURL())) wc.reload();
+  }
+}
+
+// Last resort when the CDN cannot be reached and there is no engine at all:
+// the lists bundled with the library's own download helpers.
+async function loadFallback(mode) {
   try {
     const fetchImpl = (url) => netSession.fetch(url, { cache: 'no-store' });
     const fresh =
       mode === 'aggressive'
         ? await lib().ElectronBlocker.fromPrebuiltFull(fetchImpl)
         : await lib().ElectronBlocker.fromPrebuiltAdsAndTracking(fetchImpl);
-    if (settings.get('shields.adblock') !== mode) return;
+    if (settings.get('shields.adblock') !== mode || engine) return;
     engine = fresh;
     scriptletCache.clear();
     engineMode = mode;
-    engineAge = 0;
-    fs.writeFileSync(dataPath(`shields-${mode}.bin`), Buffer.from(fresh.serialize()));
+    engineId = null;
   } catch (err) {
-    console.warn('[shields] filter list update failed:', err.message);
-    if (!engine) retryTimer = setTimeout(reloadEngine, 60_000);
+    console.warn('[shields] fallback filter lists failed:', err.message);
   }
 }
 
@@ -291,8 +404,11 @@ function serveDecoy(request) {
 // synchronously (in every frame) and runs them before any of the page's own
 // scripts. Each one gets a scope of its own: run side by side in the global
 // scope, as the library does, their helper functions overwrite each other and
-// recurse forever. On YouTube only some of them run, plus Imp's lighter player
-// (youtube.js).
+// recurse forever. On YouTube all of them run, as in uBlock Origin: together
+// they ask YouTube for the video without ads in the first place, so there is
+// no skipped ad for it to notice. Parts of them alone (pruning the ads out of
+// the response) are exactly what YouTube detects. youtube.js adds Imp's
+// lighter player.
 const SCRIPTLET_GUARD = "if (typeof scriptletGlobals === 'undefined') { var scriptletGlobals = {}; };";
 const scriptletCache = new Map(); // hostname -> code, for the current engine
 
@@ -317,9 +433,7 @@ function scriptletsFor(url) {
     });
     let code = '';
     if (active !== false && scripts.length) {
-      const wrapped = scripts
-        .filter((s) => !onYouTube || youtube.keepScriptlet(s))
-        .map((s) => `try { (() => { ${s.startsWith(SCRIPTLET_GUARD) ? s.slice(SCRIPTLET_GUARD.length) : s}\n})(); } catch (e) {}`);
+      const wrapped = [...new Set(scripts)].map((s) => `try { (() => { ${s.startsWith(SCRIPTLET_GUARD) ? s.slice(SCRIPTLET_GUARD.length) : s}\n})(); } catch (e) {}`);
       code = `(() => {\nconst scriptletGlobals = {};\n${wrapped.join('\n')}\n})();`;
     }
     if (scriptletCache.size > 300) scriptletCache.clear();
@@ -364,6 +478,7 @@ function init(net, blockedCallback) {
   settings.on('change', (key) => {
     if (key === 'shields.adblock' || key === '*') reloadEngine();
   });
+  setInterval(() => loading || reloadEngine(), CHECK_EVERY / 4).unref();
   return reloadEngine();
 }
 

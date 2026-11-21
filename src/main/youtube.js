@@ -4,12 +4,11 @@
 // playback (measured). Runs in the page's own world before YouTube's scripts,
 // handed out with the ad blocker's page code (scriptletsFor in shields.js).
 //
-// Ads on YouTube: network blocking with working decoys (shields.js) plus only
-// those filter-list scriptlets that strip ad data from the page itself. The ones
-// that rewrite the player's own requests and responses (and the anti-detection
-// helpers that come with them) make YouTube hold each video back for about 10 s
-// or never start it (measured in Imp 1.0.8). Imp 1.0.7 skipped ads in the player
-// instead, which YouTube recognised and answered with its ad blocker wall.
+// Ads on YouTube: network blocking with working decoys plus every filter-list
+// scriptlet, fresh from the CDN (shields.js). The lists' current method asks
+// YouTube for the video without ads, so there is nothing for it to detect.
+// Running only parts of them (1.0.8: pruning ads out of responses) or skipping
+// ads in the player (1.0.7) is what YouTube recognised and walled off.
 
 const NO_AMBIENT = `(() => {
   const add = () => {
@@ -27,14 +26,4 @@ function pageCode({ lighter }) {
   return lighter ? NO_AMBIENT : '';
 }
 
-// Whether a filter-list scriptlet runs on YouTube (see above).
-function keepScriptlet(script) {
-  const at = script.lastIndexOf('(function ');
-  const name = (/^\(function (\w+)\(/.exec(script.slice(at)) || [])[1] || '';
-  const args = script.slice(script.lastIndexOf('(...['));
-  if (name === 'setConstant' || name === 'jsonPrune') return true;
-  if (/^jsonPrune(Fetch|Xhr)Response$/.test(name)) return !/player|playlist|get_watch/i.test(args);
-  return false;
-}
-
-module.exports = { isYouTube, pageCode, keepScriptlet };
+module.exports = { isYouTube, pageCode };
